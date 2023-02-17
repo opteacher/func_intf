@@ -1,26 +1,27 @@
-import { createRouter, createWebHistory, RouteRecordRaw } from "vue-router";
-import HomeView from "../views/HomeView.vue";
+import { createRouter, createWebHistory, RouteRecordRaw } from 'vue-router'
+import SpeechTranslate from '../views/SpeechTranslate.vue'
+import Encode from '../views/Encode.vue'
 
 const routes: Array<RouteRecordRaw> = [
   {
-    path: "/",
-    name: "home",
-    component: HomeView,
+    path: '/',
+    redirect: '/speech_translation'
   },
   {
-    path: "/about",
-    name: "about",
-    // route level code-splitting
-    // this generates a separate chunk (about.[hash].js) for this route
-    // which is lazy-loaded when the route is visited.
-    component: () =>
-      import(/* webpackChunkName: "about" */ "../views/AboutView.vue"),
+    path: '/speech_translation',
+    name: 'speech_translation',
+    component: SpeechTranslate
   },
-];
+  {
+    path: '/tool_box/encode',
+    name: 'encode',
+    component: Encode
+  }
+]
 
 const router = createRouter({
-  history: createWebHistory(process.env.BASE_URL),
-  routes,
-});
+  history: createWebHistory(process.env.BASE_URL || '/func_intf/'),
+  routes
+})
 
-export default router;
+export default router
