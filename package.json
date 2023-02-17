@@ -9,11 +9,19 @@
   },
   "dependencies": {
     "ant-design-vue": "^3.2.15",
+    "axios": "^0.24.0",
     "core-js": "^3.8.3",
+    "dayjs": "^1.11.3",
+    "tiny-emitter": "^2.1.0",
+    "uuid": "^8.3.2",
     "vue": "^3.2.13",
-    "vue-router": "^4.0.3"
+    "vue-router": "^4.0.3",
+    "vue3-ace-editor": "^2.2.2",
+    "xlsx": "https://cdn.sheetjs.com/xlsx-0.18.12/xlsx-0.18.12.tgz"
   },
   "devDependencies": {
+    "@rushstack/eslint-patch": "^1.2.0",
+    "@types/uuid": "^8.3.4",
     "@typescript-eslint/eslint-plugin": "^5.4.0",
     "@typescript-eslint/parser": "^5.4.0",
     "@vue/cli-plugin-babel": "~5.0.0",
@@ -21,10 +29,12 @@
     "@vue/cli-plugin-router": "~5.0.0",
     "@vue/cli-plugin-typescript": "~5.0.0",
     "@vue/cli-service": "~5.0.0",
+    "@vue/eslint-config-prettier": "^7.0.0",
     "@vue/eslint-config-typescript": "^9.1.0",
     "autoprefixer": "^10.4.13",
     "eslint": "^7.32.0",
     "eslint-config-prettier": "^8.3.0",
+    "eslint-plugin-cypress": "^2.12.1",
     "eslint-plugin-prettier": "^4.0.0",
     "eslint-plugin-vue": "^8.0.3",
     "postcss": "^8.4.21",

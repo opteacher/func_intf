@@ -52,7 +52,7 @@ function onMuItmSelect(params: SelectInfo) {
       </a-layout-sider>
       <a-layout>
         <a-layout-content class="bg-gray-300 p-2.5 m-0 h-full">
-          <div class="bg-white h-full"><router-view /></div>
+          <div class="bg-white h-full p-2.5"><router-view /></div>
         </a-layout-content>
       </a-layout>
     </a-layout>

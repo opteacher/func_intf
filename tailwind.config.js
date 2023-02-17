@@ -1,4 +1,5 @@
 /** @type {import('tailwindcss').Config} */
+const base = require('./lib/tailwind.config')
 module.exports = {
   corePlugins: {
     preflight: false
@@ -6,7 +7,17 @@ module.exports = {
   important: true,
   content: ['./src/**/*.{vue,ts}'],
   theme: {
-    extend: {}
+    extend: {
+      textColor: theme => ({
+        ...base.theme.textColor(theme)
+      }),
+      backgroundColor: theme => ({
+        ...base.theme.backgroundColor(theme)
+      }),
+      borderColor: theme => ({
+        ...base.theme.borderColor(theme)
+      })
+    }
   },
   plugins: []
 }
