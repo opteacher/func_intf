@@ -20,6 +20,9 @@ function onCopy() {
   navigator.clipboard.writeText(props.content)
   copied.value = true
   message.success('复制成功！')
+  setTimeout(() => {
+    copied.value = false
+  }, 5000)
 }
 </script>
 

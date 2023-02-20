@@ -54,7 +54,7 @@ async function onDoClick() {
         :options="obj2opns(crypt === 'decrypt' ? symAlgs : algs)"
         v-model:value="alg"
       />
-      <a-input placeholder="输入密钥（可选）" v-model="secret" />
+      <a-input-password placeholder="输入密钥（可选）" v-model:value="secret" allowClear />
       <a-button html-type="submit" type="primary" @click="onDoClick">执行</a-button>
     </a-space>
     <a-card class="flex-1" :bordered="false" size="small">

@@ -14,7 +14,7 @@ export default {
         type: 'api',
         axiosConfig: { params: { data, alg, secret } }
       }),
-    random: (randType: 'number' | 'uuid' | 'hex' | 'name', params?: any) =>
+    random: (randType: 'number' | 'uuid' | 'string' | 'name', params?: any) =>
       reqGet('random', randType, { project: 'tool_box', type: 'api', axiosConfig: { params } })
   }
 }

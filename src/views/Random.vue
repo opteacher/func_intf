@@ -6,18 +6,28 @@ import api from '@/api'
 
 const randTyps = {
   number: '数字',
-  uuid: 'ID'
+  uuid: 'ID',
+  string: '串'
 }
 const output = ref('')
-const randType = ref<'number' | 'uuid' | 'hex' | 'name'>('number')
-const numRng = reactive<[number, number]>([0, 10])
+const randType = ref<'number' | 'uuid' | 'string' | 'name'>('number')
+const numStats = reactive({
+  range: [0, 10],
+  rounding: false
+})
+const strLen = ref(null)
 
 async function onDoClick() {
-  let extra = undefined
+  let extra: any = undefined
   switch (randType.value) {
     case 'number':
-      extra = { min: numRng[0], max: numRng[1] }
+      extra = { min: numStats.range[0], max: numStats.range[1] }
+      if (numStats.rounding) {
+        extra.rounding = 1
+      }
       break
+    case 'string':
+      extra = { length: strLen.value }
   }
   output.value = (await api.toolBox.random(randType.value, extra)).toString()
 }
@@ -37,17 +47,21 @@ async function onDoClick() {
           <a-input
             class="flex-1 border-r-0 text-center"
             type="number"
-            v-model:value="numRng[0]"
+            v-model:value="numStats.range[0]"
             placeholder="输入随机下限"
           />
           <a-input class="bg-white w-10 border-x-0 text-center" placeholder="~" disabled />
           <a-input
             class="flex-1 border-l-0 text-center"
             type="number"
-            v-model:value="numRng[1]"
+            v-model:value="numStats.range[1]"
             placeholder="M输入随机上限"
           />
         </div>
+        <a-checkbox v-model:checked="numStats.rounding">取整</a-checkbox>
+      </template>
+      <template v-else-if="randType === 'string'">
+        <a-input-number class="w-32" v-model:value="strLen" placeholder="输入串长度" />
       </template>
       <a-button html-type="submit" type="primary" @click="onDoClick">执行</a-button>
     </a-space>

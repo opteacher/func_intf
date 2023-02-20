@@ -5,7 +5,7 @@ module.exports = defineConfig({
   devServer: {
     proxy: {
       '/(speech_translation|tool_box)/(mdl|api)': {
-        target: 'http://1.15.57.178/',
+        target: 'http://192.168.1.11/',
         ws: true,
         changeOrigin: true
       }
