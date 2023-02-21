@@ -1,0 +1,42 @@
+version: '3'
+services:
+  tool_box:
+    image: tool_box
+    container_name: tool_box
+    privileged: true
+    ports:
+      - 127.0.0.1:3121:3121
+
+  speech_translation:
+    image: speech_translation
+    container_name: speech_translation
+    privileged: true
+    ports:
+      - 127.0.0.1:9095:9095
+    volumes:
+      - /var/run/docker/sock:/var/run/docker.sock:ro
+      - /usr/bin/docker:/usr/bin/docker:ro
+      - /tmp:/tmp
+
+  nginx:
+    image: nginx
+    container_name: nginx
+    privileged: true
+    ports:
+      - 0.0.0.0:80:80
+    volumes:
+      - ./default.conf:/etc/nginx/conf.d/default.conf
+
+  default:
+    build:
+      context:./
+    container_name: func_intf
+    privileged: true
+    ports:
+      - 0.0.0.0:8080:8080
+    volumes:
+      - ./dist:/public
+
+networks:
+  func_intf:
+    driver: bridge
