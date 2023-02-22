@@ -1,4 +1,4 @@
-# speech_translation_frt
+# func_intf
 
 ## Project setup
 ```
