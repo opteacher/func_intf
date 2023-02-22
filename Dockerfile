@@ -3,7 +3,8 @@ FROM mhart/alpine-node:latest
 WORKDIR /app
 
 COPY . /app
-RUN apt-get install git \
+RUN sed -i 's/dl-cdn.alpinelinux.org/mirrors.ustc.edu.cn/g' /etc/apk/repositories \
+  && apk update && apk add git \
   && git submodule init && git submodule update \
   && npm config set registry http://registry.npm.taobao.org \
   && npm install -g npm@8.14.0 \
