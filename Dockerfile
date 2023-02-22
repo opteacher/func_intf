@@ -1,10 +1,15 @@
 FROM mhart/alpine-node:latest
 
-WORKDIR /public
+WORKDIR /app
 
-RUN npm install -g npm@8.14.0 && npm i http-server
+COPY . /app
+RUN npm config set registry http://registry.npm.taobao.org \
+  && npm install -g npm@8.14.0 \
+  && npm install--unsafe-perm=true --allow-root \
+  && npm run build
 
-COPY ./dist /public
+RUN npm i http-server
+COPY ./dist/* /public
 
 EXPOSE 8080
 

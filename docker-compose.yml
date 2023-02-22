@@ -29,7 +29,7 @@ services:
 
   default:
     build:
-      context:./
+      context: ./
     container_name: func_intf
     privileged: true
     ports:
