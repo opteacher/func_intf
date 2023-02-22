@@ -8,7 +8,6 @@ RUN npm config set registry http://registry.npm.taobao.org \
 FROM mhart/alpine-node:latest
 WORKDIR /public
 COPY --from=0 /app/dist/* /public
-RUN npm i http-server
+RUN npm install -g npm@8.14.0 && npm i http-server
 EXPOSE 8080
-ENTRYPOINT [ "http-server" ]
-CMD [ "-P", "http://nginx" ]
+CMD [ "http-server", "-P", "http://nginx" ]
