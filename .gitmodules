@@ -1,3 +1,3 @@
 [submodule "lib"]
 	path = lib
-	url = https://github.com/opteacher/frontend-library.git
+	url = git@github.com:opteacher/frontend-library.git
