@@ -1,4 +1,4 @@
-FROM node:16.15.1
+FROM node:latest
 WORKDIR /app
 COPY . /app
 RUN npm config set registry http://registry.npm.taobao.org \
@@ -6,8 +6,9 @@ RUN npm config set registry http://registry.npm.taobao.org \
   && npm run build
 
 FROM mhart/alpine-node:latest
+RUN npm install -g npm@8.14.0 && npm i -g http-server
 WORKDIR /public
-COPY --from=0 /app/dist/* /public
-RUN npm install -g npm@8.14.0 && npm i http-server
+COPY --from=0 /app/dist /public
 EXPOSE 8080
-CMD [ "http-server", "-P", "http://nginx" ]
+ENTRYPOINT [ "http-server" ]
+CMD [ "-P", "http://nginx" ]
