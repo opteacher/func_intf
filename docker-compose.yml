@@ -14,7 +14,7 @@ services:
     ports:
       - 127.0.0.1:9095:9095
     volumes:
-      - /var/run/docker/sock:/var/run/docker.sock:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
       - /usr/bin/docker:/usr/bin/docker:ro
       - /tmp:/tmp
 
@@ -34,8 +34,6 @@ services:
     privileged: true
     ports:
       - 0.0.0.0:8080:8080
-    volumes:
-      - ./dist:/public
 
 networks:
   func_intf:
