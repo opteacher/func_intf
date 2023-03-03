@@ -15,6 +15,7 @@ module.exports = defineConfig({
   configureWebpack: {
     resolve: {
       alias: {
+        '@': path.resolve('./src'),
         '@lib': path.resolve('./lib/src')
       }
     }

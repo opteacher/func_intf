@@ -16,7 +16,7 @@ router.beforeEach(to => {
 })
 
 function onMuItmSelect(params: SelectInfo) {
-  router.push('/' + (params.keyPath || []).join('/'))
+  router.push('/func_intf/' + (params.keyPath || []).join('/'))
 }
 </script>
 

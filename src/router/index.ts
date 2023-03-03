@@ -7,25 +7,25 @@ import Random from '../views/Random.vue'
 const routes: Array<RouteRecordRaw> = [
   {
     path: '/',
-    redirect: '/speech_translation'
+    redirect: '/func_intf/speech_translation'
   },
   {
-    path: '/speech_translation',
+    path: '/func_intf/speech_translation',
     name: 'speech_translation',
     component: SpeechTranslate
   },
   {
-    path: '/tool_box/encode',
+    path: '/func_intf/tool_box/encode',
     name: 'encode',
     component: Encode
   },
   {
-    path: '/tool_box/crypto',
+    path: '/func_intf/tool_box/crypto',
     name: 'crypto',
     component: Crypto
   },
   {
-    path: '/tool_box/random',
+    path: '/func_intf/tool_box/random',
     name: 'random',
     component: Random
   }
