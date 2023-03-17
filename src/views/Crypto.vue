@@ -1,11 +1,11 @@
 <script lang="ts" setup>
 import { obj2opns } from '@/utils'
 import { reactive, ref } from 'vue'
-import { PlusOutlined, DeleteOutlined, CopyOutlined } from '@ant-design/icons-vue'
-import { ChangeEvent } from 'ant-design-vue/lib/_util/EventInterface'
+import { PlusOutlined, DeleteOutlined } from '@ant-design/icons-vue'
 import api from '@/api'
 import { notification } from 'ant-design-vue'
 import OutPanel from '@/components/OutPanel.vue'
+import { ChangeEvent } from 'ant-design-vue/lib/_util/EventInterface'
 
 const aymAlgs = {
   sha1: 'SHA.1',

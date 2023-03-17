@@ -5,7 +5,7 @@ module.exports = {
     preflight: false
   },
   important: true,
-  content: ['./src/**/*.{vue,ts}'],
+  content: ['./lib/src/**/*.{vue,ts}', './src/**/*.{vue,ts}'],
   theme: {
     extend: {
       textColor: theme => ({

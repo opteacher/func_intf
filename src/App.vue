@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { InboxOutlined, AudioOutlined } from '@ant-design/icons-vue'
+import { InboxOutlined, AudioOutlined, KeyOutlined } from '@ant-design/icons-vue'
 import router from './router'
 import { SelectInfo } from 'ant-design-vue/lib/menu/src/interface'
 import { reactive } from 'vue'
@@ -47,6 +47,14 @@ function onMuItmSelect(params: SelectInfo) {
             <a-menu-item key="encode">编码类</a-menu-item>
             <a-menu-item key="crypto">加解密</a-menu-item>
             <a-menu-item key="random">随机</a-menu-item>
+          </a-sub-menu>
+          <a-sub-menu key="secret">
+            <template #icon><key-outlined /></template>
+            <template #title>密钥管理</template>
+            <a-menu-item key="policy">策略</a-menu-item>
+            <a-menu-item key="role">角色</a-menu-item>
+            <a-menu-item key="user">用户</a-menu-item>
+            <a-menu-item key="manage">密钥</a-menu-item>
           </a-sub-menu>
         </a-menu>
       </a-layout-sider>
