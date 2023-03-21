@@ -51,6 +51,7 @@ function onMuItmSelect(params: SelectInfo) {
           <a-sub-menu key="secret">
             <template #icon><key-outlined /></template>
             <template #title>密钥管理</template>
+            <a-menu-item key="guide">向导</a-menu-item>
             <a-menu-item key="policy">策略</a-menu-item>
             <a-menu-item key="role">角色</a-menu-item>
             <a-menu-item key="user">用户</a-menu-item>

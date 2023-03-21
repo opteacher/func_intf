@@ -7,6 +7,7 @@ import Policy from '../views/Policy.vue'
 import Role from '../views/Role.vue'
 import User from '../views/User.vue'
 import Secret from '../views/Secret.vue'
+import Guide from '../views/Guide.vue'
 
 const routes: Array<RouteRecordRaw> = [
   {
@@ -52,6 +53,11 @@ const routes: Array<RouteRecordRaw> = [
     path: '/func_intf/secret/manage',
     name: 'secret',
     component: Secret
+  },
+  {
+    path: '/func_intf/secret/guide',
+    name: 'guide',
+    component: Guide
   }
 ]
 

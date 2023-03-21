@@ -31,7 +31,6 @@ const pathEmit = new Emitter()
     :copy="Policy.copy"
     :emitter="plcEmit"
     sclHeight="h-full"
-    :editable="false"
     size="middle"
   >
     <template #expandedRowRender="{ record: policy }">
@@ -67,7 +66,6 @@ const pathEmit = new Emitter()
         "
         :copy="PlcPath.copy"
         :emitter="pathEmit"
-        :editable="false"
         size="small"
       />
     </template>

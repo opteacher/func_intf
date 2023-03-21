@@ -11,6 +11,7 @@ import { TinyEmitter as Emitter } from 'tiny-emitter'
 import api from '@/api'
 import KV from '@/types/kv'
 import Login from '@/types/login'
+import { OperType } from '@/types/policy'
 
 const treeData: TreeProps['treeData'] = reactive([])
 const expandedKeys = ref<string[]>([])
@@ -18,11 +19,12 @@ const selectedKeys = ref<string[]>([])
 const emitter = new Emitter()
 const lgnForm = reactive(new Login())
 const logined = ref(false)
+const capabilities = reactive<OperType[]>([])
 
 onMounted(async () => {
-  treeData.splice(0, treeData?.length, await api.secret.secret.all())
   if (window.localStorage.getItem('token')) {
     logined.value = true
+    treeData.splice(0, treeData?.length, await api.secret.secret.all())
   }
 })
 
@@ -40,6 +42,10 @@ async function onLogin(form: Login) {
 function onLogout() {
   window.localStorage.removeItem('token')
   logined.value = false
+}
+function onSecretClick(_selKeys: string[], { selectedNodes }: any) {
+  capabilities.splice(0, capabilities.length, ...(selectedNodes[0].capabilities as OperType[]))
+  emitter.emit('refresh')
 }
 </script>
 
@@ -88,14 +94,15 @@ function onLogout() {
           v-model:expandedKeys="expandedKeys"
           v-model:selectedKeys="selectedKeys"
           :tree-data="treeData"
-          @select="() => emitter.emit('refresh')"
+          @select="onSecretClick"
         />
       </a-col>
       <a-col class="h-full" :span="16">
         <EditableTable
-          :title="`${selectedKeys[0] || 'root'} 包含键值`"
+          :title="`${selectedKeys[0] || 'root'} 包含的键值`"
           :api="{
-            all: () => api.secret.secret.kv.all(selectedKeys[0])
+            all: () =>
+              capabilities.includes('list') ? api.secret.secret.kv.all(selectedKeys[0]) : []
           }"
           :columns="[new Column('键', 'subKey'), new Column('值', 'subVal')]"
           :mapper="
@@ -103,7 +110,10 @@ function onLogout() {
               secret: {
                 label: '所在密钥',
                 type: 'Input',
-                disabled: [Cond.copy({ key: 'key', cmp: '!=', val: '' })]
+                disabled: [
+                  Cond.copy({ key: 'key', cmp: '!=', val: '' }),
+                  Cond.copy({ key: 'key', cmp: '!=', val: 'undefined' })
+                ]
               },
               subKey: {
                 label: '键',
@@ -119,6 +129,14 @@ function onLogout() {
           :emitter="emitter"
           size="middle"
           sclHeight="h-full"
+          :addable="capabilities.includes('create')"
+          :editable="capabilities.includes('update')"
+          :delable="capabilities.includes('delete')"
+          @add="
+            () => {
+              emitter.emit('update:data', { secret: selectedKeys[0] })
+            }
+          "
         />
       </a-col>
     </a-row>

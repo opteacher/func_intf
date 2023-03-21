@@ -9,7 +9,7 @@ export const operMap = {
   delete: '删除'
 }
 
-type OperType = keyof typeof operMap
+export type OperType = keyof typeof operMap
 
 export const operOpns = Object.entries(operMap).map(([value, label]) => ({ label, value }))
 

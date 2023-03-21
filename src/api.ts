@@ -73,7 +73,19 @@ export default {
         })
     },
     secret: {
-      all: () => reqPost('secret', { opera: 'list' }, secretOpns),
+      all: () =>
+        reqPost(
+          'secret',
+          { opera: 'list' },
+          Object.assign(
+            {
+              axiosConfig: {
+                headers: { 'X-Login-Token': window.localStorage.getItem('token') }
+              }
+            } as RequestOptions,
+            secretOpns
+          )
+        ),
       kv: {
         all: (secret: string) =>
           secret

@@ -86,5 +86,8 @@ onMounted(async () => {
         size="small"
       />
     </template>
+    <template #role="{ record: user }">
+      <router-link to="/func_intf/secret/role">{{ user.role }}</router-link>
+    </template>
   </EditableTable>
 </template>
