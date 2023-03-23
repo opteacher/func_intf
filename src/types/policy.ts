@@ -34,7 +34,7 @@ export class PlcPath {
   }
 
   static copy(src: any, tgt?: PlcPath, force = false) {
-    return gnlCpy(PlcPath, Object.assign({ key: v4() }, src), tgt, { force })
+    return gnlCpy(PlcPath, src, tgt, { force })
   }
 }
 
@@ -58,7 +58,7 @@ export default class Policy {
     this.paths = []
   }
 
-  static cvtPaths(policies: string, retFst = false): PlcPath[] {
+  static fromPaths(policies: string, retFst = false): PlcPath[] {
     const ret: PlcPath[] = []
     const plcPath = new PlcPath()
     for (const line of policies.split('\n')) {
@@ -70,6 +70,7 @@ export default class Policy {
         plcPath.capabilities = JSON.parse(line.trimStart().substring('capabilities = '.length))
 
         const newPath = PlcPath.copy(plcPath)
+        newPath.key = v4()
         if (retFst) {
           return [newPath]
         } else {
@@ -81,13 +82,29 @@ export default class Policy {
     return ret
   }
 
+  static toPaths(paths: PlcPath[]): string {
+    return paths
+      .map(path =>
+        [
+          path.remark
+            .split('\n')
+            .map(line => '#' + line)
+            .join('\n'),
+          `path "${path.path}" {`,
+          `  capabilities = [${path.capabilities.map(cap => '"' + cap + '"')}]`,
+          '}'
+        ].join('\n')
+      )
+      .join('\n')
+  }
+
   static copy(src: any, tgt?: Policy, force = false): Policy {
-    tgt = gnlCpy(Policy, Object.assign({ key: v4() }, src), tgt, {
+    tgt = gnlCpy(Policy, src, tgt, {
       force,
       cpyMapper: { paths: PlcPath.copy }
     })
     if (src.policy) {
-      tgt.paths = Policy.cvtPaths(src.policy)
+      tgt.paths = Policy.fromPaths(src.policy)
     }
     return tgt
   }

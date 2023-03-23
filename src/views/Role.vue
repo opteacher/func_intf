@@ -27,12 +27,21 @@ onMounted(async () => {
     title="角色"
     icon="solution-outlined"
     :api="api.secret.role"
-    :columns="[new Column('名称', 'name'), new Column('策略', 'policy')]"
+    :columns="[
+      new Column('名称', 'name'),
+      new Column('角色ID', 'key'),
+      new Column('策略', 'policy')
+    ]"
     :mapper="
       new Mapper({
         name: {
           label: '名称',
           type: 'Input'
+        },
+        key: {
+          label: '角色ID',
+          type: 'Input',
+          disabled: true
         },
         policy: {
           label: '策略',

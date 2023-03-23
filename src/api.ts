@@ -1,5 +1,5 @@
 import Role from './types/role'
-import Policy from './types/policy'
+import Policy, { PlcPath } from './types/policy'
 import { RequestOptions, reqGet, reqPost } from './utils'
 import User from './types/user'
 import KV from './types/kv'
@@ -9,6 +9,13 @@ import { v4 } from 'uuid'
 
 const toolOpns = { project: 'tool_box', type: 'api' } as RequestOptions
 const secretOpns = { project: 'secret-manager', type: 'api' } as RequestOptions
+
+const genWithLgnTkn = (): RequestOptions =>
+  ({
+    axiosConfig: {
+      headers: { 'X-Login-Token': window.localStorage.getItem('token') }
+    }
+  } as RequestOptions)
 
 export default {
   toolBox: {
@@ -50,20 +57,69 @@ export default {
     policy: {
       all: () =>
         reqPost('policy', { opera: 'list' }, secretOpns).then(ress =>
-          ress.map((res: any) => Policy.copy(res))
+          ress.map((res: any) => Policy.copy(Object.assign({ key: v4() }, res)))
         ),
-      path: (policy: Policy) => ({
-        all: () => policy.paths
-      })
+      add: (policy: Policy) =>
+        reqPost(
+          'policy',
+          { opera: 'write', name: policy.name, content: policy.policy },
+          secretOpns
+        ),
+      update: (policy: Policy) =>
+        reqPost(
+          'policy',
+          { opera: 'write', name: policy.name, content: policy.policy },
+          secretOpns
+        ),
+      remove: (policy: Policy) =>
+        reqPost('policy', { opera: 'delete', name: policy.name }, secretOpns),
+      path: {
+        all: (policy: Policy) => policy.paths,
+        save: (policy: Policy, path: PlcPath) => {
+          if (path.key) {
+            PlcPath.copy(
+              path,
+              policy.paths.find(p => p.key === path.key),
+              true
+            )
+          } else {
+            policy.paths.push(path)
+          }
+          return reqPost(
+            'policy',
+            {
+              opera: 'write',
+              name: policy.name,
+              content: Policy.toPaths(policy.paths)
+            },
+            secretOpns
+          )
+        },
+        remove: (policy: Policy, path: PlcPath) =>
+          reqPost(
+            'policy',
+            {
+              opera: 'write',
+              name: policy.name,
+              content: Policy.toPaths(policy.paths.filter(p => p.key !== path.key))
+            },
+            secretOpns
+          )
+      }
     },
     role: {
-      all: () => reqPost('role', { opera: 'list' }, Object.assign({ copy: Role.copy }, secretOpns))
+      all: () => reqPost('role', { opera: 'list' }, Object.assign({ copy: Role.copy }, secretOpns)),
+      add: (role: Role) => reqPost('role', Object.assign({ opera: 'create' }, role), secretOpns),
+      remove: (role: Role) => reqPost('role', { opera: 'delete', name: role.name }, secretOpns)
     },
     user: {
       all: () =>
         reqPost('user', { opera: 'list' }, secretOpns).then(ress =>
-          ress.map((res: any) => User.copy(res))
+          ress.map((res: any) => User.copy(Object.assign({ key: v4() }, res)))
         ),
+      add: (user: User) => reqPost('user', { opera: 'create', role: user.role }, secretOpns),
+      remove: (user: User) =>
+        reqPost('user', { opera: 'delete', sctIdAcs: user.key, role: user.role }, secretOpns),
       login: (form: Login) =>
         reqPost('user/login', form, secretOpns).then(resp => {
           window.localStorage.setItem('token', resp.client_token)
@@ -73,40 +129,36 @@ export default {
         })
     },
     secret: {
-      all: () =>
-        reqPost(
-          'secret',
-          { opera: 'list' },
-          Object.assign(
-            {
-              axiosConfig: {
-                headers: { 'X-Login-Token': window.localStorage.getItem('token') }
-              }
-            } as RequestOptions,
-            secretOpns
-          )
-        ),
+      all: () => reqPost('secret', { opera: 'list' }, Object.assign(genWithLgnTkn(), secretOpns)),
+      remove: (secret: string) =>
+        reqPost('secret', { opera: 'delete', secret }, Object.assign(genWithLgnTkn(), secretOpns)),
       kv: {
         all: (secret: string) =>
           secret
             ? reqPost(
                 'secret',
                 { opera: 'get', secret },
-                Object.assign(
-                  {
-                    notShow: true,
-                    axiosConfig: {
-                      headers: { 'X-Login-Token': window.localStorage.getItem('token') }
-                    }
-                  } as RequestOptions,
-                  secretOpns
-                )
+                Object.assign({ notShow: true }, genWithLgnTkn(), secretOpns)
               ).then(res =>
-                Object.entries(res).map(([subKey, subVal]) =>
-                  KV.copy({ key: v4(), secret, subKey, subVal })
+                Object.entries(res).map(([skey, svalue]) =>
+                  KV.copy({ key: v4(), secret, skey, svalue })
                 )
               )
-            : []
+            : [],
+        save: (sctKV: KV) => {
+          console.log(sctKV)
+          return reqPost(
+            'secret',
+            Object.assign({ opera: 'put' }, sctKV),
+            Object.assign(genWithLgnTkn(), secretOpns)
+          )
+        },
+        remove: (sctKV: KV) =>
+          reqPost(
+            'secret',
+            Object.assign({ opera: 'delete' }, sctKV),
+            Object.assign(genWithLgnTkn(), secretOpns)
+          )
       }
     }
   }

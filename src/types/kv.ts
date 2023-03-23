@@ -3,21 +3,21 @@ import { gnlCpy } from '@lib/utils'
 export default class KV {
   key: string
   secret: string
-  subKey: string
-  subVal: string
+  skey: string
+  svalue: string
 
   constructor() {
     this.key = ''
     this.secret = ''
-    this.subKey = ''
-    this.subVal = ''
+    this.skey = ''
+    this.svalue = ''
   }
 
   reset() {
     this.key = ''
     this.secret = ''
-    this.subKey = ''
-    this.subVal = ''
+    this.skey = ''
+    this.svalue = ''
   }
 
   static copy(src: any, tgt?: KV, force = false) {

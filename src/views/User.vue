@@ -4,13 +4,15 @@ import api from '../api'
 import Column from '@lib/types/column'
 import Mapper from '@lib/types/mapper'
 import User from '@/types/user'
-import { PlcPath, operOpns } from '@/types/policy'
 import { TinyEmitter as Emitter } from 'tiny-emitter'
-import { onMounted } from 'vue'
+import { createVNode, onMounted } from 'vue'
 import Role from '@/types/role'
+import { Cond } from '@lib/types'
+import { Modal } from 'ant-design-vue'
+import UsrGenCtt from '@/components/UsrGenCtt.vue'
+import { pickOrIgnore } from '@lib/utils'
 
 const emitter = new Emitter()
-const pathEmit = new Emitter()
 
 onMounted(async () => {
   emitter.emit('update:mapper', {
@@ -22,6 +24,14 @@ onMounted(async () => {
     }
   })
 })
+
+function onUserCreated(user: any) {
+  Modal.success({
+    title: '用户创建成功！',
+    width: '60vw',
+    content: createVNode(UsrGenCtt, pickOrIgnore(user, ['secretId'], false))
+  })
+}
 </script>
 
 <template>
@@ -29,17 +39,27 @@ onMounted(async () => {
     title="用户"
     icon="team-outlined"
     :api="api.secret.user"
-    :columns="[new Column('登录ID', 'roleId'), new Column('角色', 'role')]"
+    :columns="[
+      new Column('访客ID', 'key'),
+      new Column('角色', 'role'),
+      new Column('创建时间', 'creation_time')
+    ]"
     :mapper="
       new Mapper({
-        roleId: {
-          label: '登录ID',
+        key: {
+          label: '访客ID',
           type: 'Input',
           disabled: true
         },
         role: {
           label: '角色',
-          type: 'Select'
+          type: 'Select',
+          rules: [{ required: true, message: '必须选择角色！' }]
+        },
+        creation_time: {
+          label: '创建时间',
+          type: 'DateTime',
+          display: [Cond.copy({ key: 'key', cmp: '!=', val: '' })]
         }
       })
     "
@@ -48,46 +68,19 @@ onMounted(async () => {
     sclHeight="h-full"
     :editable="false"
     size="middle"
+    @after-save="onUserCreated"
   >
-    <template #expandedRowRender="{ record: user }">
-      <EditableTable
-        title="规则"
-        :api="{ all: () => user.policies }"
-        :columns="[
-          new Column('路径', 'path'),
-          new Column('权限', 'capabilities'),
-          new Column('备注', 'remark', { width: 200 })
-        ]"
-        :mapper="
-          new Mapper({
-            path: {
-              label: '路径',
-              type: 'Input'
-            },
-            capabilities: {
-              label: '权限',
-              type: 'EditList',
-              mapper: {
-                value: {
-                  type: 'Select',
-                  options: operOpns
-                }
-              }
-            },
-            remark: {
-              label: '备注',
-              type: 'Textarea'
-            }
-          })
-        "
-        :copy="PlcPath.copy"
-        :emitter="pathEmit"
-        :editable="false"
-        size="small"
-      />
+    <template #keyEDT="{ editing: user }">
+      <p v-if="!user.key" class="mb-0 text-red-400">
+        访客ID是自动生成的，直接点击【确 认】生成用户密钥
+      </p>
+      <template v-else>{{ user.key }}</template>
     </template>
     <template #role="{ record: user }">
       <router-link to="/func_intf/secret/role">{{ user.role }}</router-link>
+    </template>
+    <template #creation_time="{ record: user }">
+      {{ user.creation_time.format('YYYY/MM/DD HH:mm:ss') }}
     </template>
   </EditableTable>
 </template>
