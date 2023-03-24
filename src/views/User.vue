@@ -13,6 +13,28 @@ import UsrGenCtt from '@/components/UsrGenCtt.vue'
 import { pickOrIgnore } from '@lib/utils'
 
 const emitter = new Emitter()
+const columns = [
+  new Column('访客ID', 'key'),
+  new Column('角色', 'role'),
+  new Column('创建时间', 'creation_time')
+]
+const mapper = new Mapper({
+  key: {
+    label: '访客ID',
+    type: 'Input',
+    disabled: true
+  },
+  role: {
+    label: '角色',
+    type: 'Select',
+    rules: [{ required: true, message: '必须选择角色！' }]
+  },
+  creation_time: {
+    label: '创建时间',
+    type: 'DateTime',
+    display: [Cond.copy({ key: 'key', cmp: '!=', val: '' })]
+  }
+})
 
 onMounted(async () => {
   emitter.emit('update:mapper', {
@@ -39,30 +61,8 @@ function onUserCreated(user: any) {
     title="用户"
     icon="team-outlined"
     :api="api.secret.user"
-    :columns="[
-      new Column('访客ID', 'key'),
-      new Column('角色', 'role'),
-      new Column('创建时间', 'creation_time')
-    ]"
-    :mapper="
-      new Mapper({
-        key: {
-          label: '访客ID',
-          type: 'Input',
-          disabled: true
-        },
-        role: {
-          label: '角色',
-          type: 'Select',
-          rules: [{ required: true, message: '必须选择角色！' }]
-        },
-        creation_time: {
-          label: '创建时间',
-          type: 'DateTime',
-          display: [Cond.copy({ key: 'key', cmp: '!=', val: '' })]
-        }
-      })
-    "
+    :columns="columns"
+    :mapper="mapper"
     :copy="User.copy"
     :emitter="emitter"
     sclHeight="h-full"
@@ -77,7 +77,7 @@ function onUserCreated(user: any) {
       <template v-else>{{ user.key }}</template>
     </template>
     <template #role="{ record: user }">
-      <router-link to="/func_intf/secret/role">{{ user.role }}</router-link>
+      <router-link to="/secret-manager/secret/role">{{ user.role }}</router-link>
     </template>
     <template #creation_time="{ record: user }">
       {{ user.creation_time.format('YYYY/MM/DD HH:mm:ss') }}

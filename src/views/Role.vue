@@ -9,6 +9,26 @@ import { onMounted } from 'vue'
 import Policy from '@/types/policy'
 
 const emitter = new Emitter()
+const columns = [
+  new Column('名称', 'name'),
+  new Column('角色ID', 'key'),
+  new Column('策略', 'policy')
+]
+const mapper = new Mapper({
+  name: {
+    label: '名称',
+    type: 'Input'
+  },
+  key: {
+    label: '角色ID',
+    type: 'Input',
+    disabled: true
+  },
+  policy: {
+    label: '策略',
+    type: 'Select'
+  }
+})
 
 onMounted(async () => {
   emitter.emit('update:mapper', {
@@ -27,28 +47,8 @@ onMounted(async () => {
     title="角色"
     icon="solution-outlined"
     :api="api.secret.role"
-    :columns="[
-      new Column('名称', 'name'),
-      new Column('角色ID', 'key'),
-      new Column('策略', 'policy')
-    ]"
-    :mapper="
-      new Mapper({
-        name: {
-          label: '名称',
-          type: 'Input'
-        },
-        key: {
-          label: '角色ID',
-          type: 'Input',
-          disabled: true
-        },
-        policy: {
-          label: '策略',
-          type: 'Select'
-        }
-      })
-    "
+    :columns="columns"
+    :mapper="mapper"
     :copy="Role.copy"
     :emitter="emitter"
     sclHeight="h-full"
@@ -56,7 +56,7 @@ onMounted(async () => {
     size="middle"
   >
     <template #policy="{ record: role }">
-      <router-link to="/func_intf/secret/policy">{{ role.policy }}</router-link>
+      <router-link to="/secret-manager/secret/policy">{{ role.policy }}</router-link>
     </template>
   </EditableTable>
 </template>

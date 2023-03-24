@@ -24,6 +24,25 @@ const logined = ref(false)
 const capabilities = reactive<OperType[]>([])
 const roleOpns = reactive<OpnType[]>([])
 const vwVals = reactive<Set<string>>(new Set())
+const columns = [new Column('键', 'skey'), new Column('值', 'svalue')]
+const mapper = new Mapper({
+  secret: {
+    label: '所在密钥',
+    type: 'Input',
+    disabled: [
+      Cond.copy({ key: 'key', cmp: '!=', val: '' }),
+      Cond.copy({ key: 'key', cmp: '!=', val: 'undefined' })
+    ]
+  },
+  skey: {
+    label: '键',
+    type: 'Input'
+  },
+  svalue: {
+    label: '值',
+    type: 'Input'
+  }
+})
 
 onMounted(refresh)
 
@@ -99,7 +118,7 @@ function onRmvSctClick() {
       <a-form-item>
         <a-space :size="8">
           <a-button html-type="submit" type="primary">登录</a-button>
-          <a-button type="button" @click="() => $router.push('/func_intf/secret/user')">
+          <a-button type="button" @click="() => $router.push('/secret-manager/secret/user')">
             注册
           </a-button>
         </a-space>
@@ -146,27 +165,8 @@ function onRmvSctClick() {
             update: api.secret.secret.kv.save,
             remove: api.secret.secret.kv.remove
           }"
-          :columns="[new Column('键', 'skey'), new Column('值', 'svalue')]"
-          :mapper="
-            new Mapper({
-              secret: {
-                label: '所在密钥',
-                type: 'Input',
-                disabled: [
-                  Cond.copy({ key: 'key', cmp: '!=', val: '' }),
-                  Cond.copy({ key: 'key', cmp: '!=', val: 'undefined' })
-                ]
-              },
-              skey: {
-                label: '键',
-                type: 'Input'
-              },
-              svalue: {
-                label: '值',
-                type: 'Input'
-              }
-            })
-          "
+          :columns="columns"
+          :mapper="mapper"
           :copy="KV.copy"
           :emitter="emitter"
           size="middle"

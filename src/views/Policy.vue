@@ -9,7 +9,51 @@ import { Cond } from '@lib/types'
 import { fixStartsWith, setProp } from '@lib/utils'
 
 const plcEmit = new Emitter()
-const pathEmit = new Emitter()
+const pthEmit = new Emitter()
+const plcCols = [new Column('名称', 'name')]
+const plcMapr = new Mapper({
+  name: {
+    label: '名称',
+    type: 'Input',
+    disabled: [
+      Cond.copy({ key: 'name', cmp: '!=', val: '' }),
+      Cond.copy({ key: 'name', cmp: '!=', val: 'undefined' })
+    ],
+    rules: [{ required: true, message: '必须输入名称！' }]
+  },
+  policy: {
+    label: '策略',
+    type: 'CodeEditor',
+    rules: [{ required: true, message: '必须包含策略！' }]
+  }
+})
+const pthCols = [
+  new Column('路径', 'path'),
+  new Column('权限', 'capabilities'),
+  new Column('备注', 'remark', { width: 200 })
+]
+const pthMapr = new Mapper({
+  path: {
+    label: '路径',
+    type: 'Input',
+    rules: [{ required: true, message: '必须输入路径！' }]
+  },
+  capabilities: {
+    label: '权限',
+    type: 'EditList',
+    mapper: {
+      value: {
+        type: 'Select',
+        options: operOpns
+      }
+    },
+    rules: [{ required: true, message: '至少包含一个权限！' }]
+  },
+  remark: {
+    label: '备注',
+    type: 'Textarea'
+  }
+})
 </script>
 
 <template>
@@ -17,25 +61,8 @@ const pathEmit = new Emitter()
     title="策略"
     icon="audit-outlined"
     :api="api.secret.policy"
-    :columns="[new Column('名称', 'name')]"
-    :mapper="
-      new Mapper({
-        name: {
-          label: '名称',
-          type: 'Input',
-          disabled: [
-            Cond.copy({ key: 'name', cmp: '!=', val: '' }),
-            Cond.copy({ key: 'name', cmp: '!=', val: 'undefined' })
-          ],
-          rules: [{ required: true, message: '必须输入名称！' }]
-        },
-        policy: {
-          label: '策略',
-          type: 'CodeEditor',
-          rules: [{ required: true, message: '必须包含策略！' }]
-        }
-      })
-    "
+    :columns="plcCols"
+    :mapper="plcMapr"
     :copy="Policy.copy"
     :emitter="plcEmit"
     sclHeight="h-full"
@@ -50,37 +77,10 @@ const pathEmit = new Emitter()
           update: (path: PlcPath) => api.secret.policy.path.save(policy, path),
           remove: (path: PlcPath) => api.secret.policy.path.remove(policy, path)
         }"
-        :columns="[
-          new Column('路径', 'path'),
-          new Column('权限', 'capabilities'),
-          new Column('备注', 'remark', { width: 200 })
-        ]"
-        :mapper="
-          new Mapper({
-            path: {
-              label: '路径',
-              type: 'Input',
-              rules: [{ required: true, message: '必须输入路径！' }]
-            },
-            capabilities: {
-              label: '权限',
-              type: 'EditList',
-              mapper: {
-                value: {
-                  type: 'Select',
-                  options: operOpns
-                }
-              },
-              rules: [{ required: true, message: '至少包含一个权限！' }]
-            },
-            remark: {
-              label: '备注',
-              type: 'Textarea'
-            }
-          })
-        "
+        :columns="pthCols"
+        :mapper="pthMapr"
         :copy="PlcPath.copy"
-        :emitter="pathEmit"
+        :emitter="pthEmit"
         size="small"
         @save="() => plcEmit.emit('refresh')"
         @delete="() => plcEmit.emit('refresh')"

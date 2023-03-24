@@ -1,7 +1,7 @@
 const { defineConfig } = require('@vue/cli-service')
 const path = require('path')
 module.exports = defineConfig({
-  assetsDir: 'func_intf',
+  assetsDir: 'secret-manager',
   transpileDependencies: true,
   devServer: {
     client: {

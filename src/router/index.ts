@@ -11,58 +11,58 @@ import Guide from '../views/Guide.vue'
 
 const routes: Array<RouteRecordRaw> = [
   {
-    path: '/',
-    redirect: '/func_intf/speech_translation'
+    path: '/secret-manager',
+    redirect: '/secret-manager/speech_translation'
   },
   {
-    path: '/func_intf/speech_translation',
+    path: '/secret-manager/speech_translation',
     name: 'speech_translation',
     component: SpeechTranslate
   },
   {
-    path: '/func_intf/tool_box/encode',
+    path: '/secret-manager/tool_box/encode',
     name: 'encode',
     component: Encode
   },
   {
-    path: '/func_intf/tool_box/crypto',
+    path: '/secret-manager/tool_box/crypto',
     name: 'crypto',
     component: Crypto
   },
   {
-    path: '/func_intf/tool_box/random',
+    path: '/secret-manager/tool_box/random',
     name: 'random',
     component: Random
   },
   {
-    path: '/func_intf/secret/policy',
+    path: '/secret-manager/secret/policy',
     name: 'policy',
     component: Policy
   },
   {
-    path: '/func_intf/secret/role',
+    path: '/secret-manager/secret/role',
     name: 'role',
     component: Role
   },
   {
-    path: '/func_intf/secret/user',
+    path: '/secret-manager/secret/user',
     name: 'user',
     component: User
   },
   {
-    path: '/func_intf/secret/manage',
+    path: '/secret-manager/secret/manage',
     name: 'secret',
     component: Secret
   },
   {
-    path: '/func_intf/secret/guide',
+    path: '/secret-manager/secret/guide',
     name: 'guide',
     component: Guide
   }
 ]
 
 const router = createRouter({
-  history: createWebHistory(process.env.BASE_URL || '/func_intf/'),
+  history: createWebHistory(process.env.BASE_URL || '/secret-manager'),
   routes
 })
 
