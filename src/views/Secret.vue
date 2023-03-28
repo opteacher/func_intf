@@ -40,7 +40,7 @@ const mapper = new Mapper({
   },
   svalue: {
     label: '值',
-    type: 'Input'
+    type: 'Password'
   }
 })
 
