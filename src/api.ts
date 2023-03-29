@@ -145,20 +145,18 @@ export default {
                 )
               )
             : [],
-        save: (sctKV: KV) => {
-          console.log(sctKV)
-          return reqPost(
+        save: (sctKV: KV, refresh = () => console.log()) =>
+          reqPost(
             'secret',
             Object.assign({ opera: 'put' }, sctKV),
             Object.assign(genWithLgnTkn(), secretOpns)
-          )
-        },
-        remove: (sctKV: KV) =>
+          ).then(refresh),
+        remove: (sctKV: KV, refresh: () => any) =>
           reqPost(
             'secret',
             Object.assign({ opera: 'delete' }, sctKV),
             Object.assign(genWithLgnTkn(), secretOpns)
-          )
+          ).then(refresh)
       }
     }
   }

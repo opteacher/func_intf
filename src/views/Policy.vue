@@ -16,15 +16,16 @@ const plcMapr = new Mapper({
     label: '名称',
     type: 'Input',
     disabled: [
-      Cond.copy({ key: 'name', cmp: '!=', val: '' }),
-      Cond.copy({ key: 'name', cmp: '!=', val: 'undefined' })
+      Cond.copy({ key: 'key', cmp: '!=', val: '' }),
+      Cond.copy({ key: 'key', cmp: '!=', val: 'undefined' })
     ],
     rules: [{ required: true, message: '必须输入名称！' }]
   },
   policy: {
     label: '策略',
     type: 'CodeEditor',
-    rules: [{ required: true, message: '必须包含策略！' }]
+    desc: '策略示例：\n# 描述\npath "secret/路径" {\n  capabilities = ["read", "create", "update", "list", "delete"]\n}',
+    rules: [{ required: true, message: '必须至少包含一条策略！' }]
   }
 })
 const pthCols = [

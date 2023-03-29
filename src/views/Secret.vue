@@ -1,5 +1,11 @@
 <script setup lang="ts">
-import { LogoutOutlined, ExclamationCircleOutlined } from '@ant-design/icons-vue'
+import {
+  LogoutOutlined,
+  ExclamationCircleOutlined,
+  ReloadOutlined,
+  SubnodeOutlined,
+  DeleteOutlined
+} from '@ant-design/icons-vue'
 import EditableTable from '@lib/components/EditableTable.vue'
 import SctValue from '@/components/SctValue.vue'
 import { Modal, TreeProps, notification } from 'ant-design-vue'
@@ -14,6 +20,7 @@ import KV from '@/types/kv'
 import Login from '@/types/login'
 import { OperType } from '@/types/policy'
 import Role from '@/types/role'
+import { setProp } from '@lib/utils'
 
 const treeData: TreeProps['treeData'] = reactive([])
 const expandedKeys = ref<string[]>([])
@@ -78,17 +85,40 @@ async function onLogout() {
   await refresh()
 }
 function onSecretClick(_selKeys: string[], { selectedNodes }: any) {
-  capabilities.splice(0, capabilities.length, ...(selectedNodes[0].capabilities as OperType[]))
+  if (!selectedKeys.value.length) {
+    capabilities.splice(0, capabilities.length)
+  } else {
+    capabilities.splice(0, capabilities.length, ...(selectedNodes[0].capabilities as OperType[]))
+  }
   emitter.emit('refresh')
 }
-function onRmvSctClick() {
+function onRmvSctClick(delKey?: string) {
+  if (!delKey) {
+    delKey = selectedKeys.value[0]
+  }
   Modal.confirm({
-    title: '确定删除该密钥节点吗？',
+    title: `确定删除该密钥节点 ${delKey} 吗？`,
     icon: createVNode(ExclamationCircleOutlined),
     content: '删除节点的同时，所有该节点的键值也会同时被删除！',
     okType: 'danger',
-    onOk: () => api.secret.secret.remove(selectedKeys.value[0]).then(refresh)
+    onOk: () => api.secret.secret.remove(delKey as string).then(refresh)
   })
+}
+function onCtxMuClick(treeKey: string, menuKey: 'create' | 'delete' | 'refresh') {
+  switch (menuKey) {
+    case 'create':
+      emitter.emit('update:show', {
+        show: true,
+        cpyRcd: (form: any) => setProp(form, 'secret', treeKey)
+      })
+      break
+    case 'delete':
+      onRmvSctClick(treeKey)
+      break
+    case 'refresh':
+      refresh()
+      break
+  }
 }
 </script>
 
@@ -145,15 +175,35 @@ function onRmvSctClick() {
           v-model:selectedKeys="selectedKeys"
           :tree-data="treeData"
           @select="onSecretClick"
-        />
-        <a-button
-          v-if="selectedKeys[0] && capabilities.includes('delete')"
-          danger
-          type="ghost"
-          @click="onRmvSctClick"
         >
-          删除密钥
-        </a-button>
+          <template #title="{ key: treeKey, title }">
+            <a-dropdown :trigger="['contextmenu']">
+              <span>{{ title }}</span>
+              <template #overlay>
+                <a-menu @click="({ key: menuKey }: any) => onCtxMuClick(treeKey, menuKey)">
+                  <a-menu-item key="refresh">
+                    <template #icon>
+                      <reload-outlined />
+                    </template>
+                    刷新
+                  </a-menu-item>
+                  <a-menu-item key="create">
+                    <template #icon>
+                      <subnode-outlined />
+                    </template>
+                    新增
+                  </a-menu-item>
+                  <a-menu-item key="delete">
+                    <template #icon>
+                      <delete-outlined />
+                    </template>
+                    删除
+                  </a-menu-item>
+                </a-menu>
+              </template>
+            </a-dropdown>
+          </template>
+        </a-tree>
       </a-col>
       <a-col class="h-full" :span="16">
         <EditableTable
@@ -161,9 +211,9 @@ function onRmvSctClick() {
           :api="{
             all: () =>
               capabilities.includes('list') ? api.secret.secret.kv.all(selectedKeys[0]) : [],
-            add: api.secret.secret.kv.save,
-            update: api.secret.secret.kv.save,
-            remove: api.secret.secret.kv.remove
+            add: (sctKV: KV) => api.secret.secret.kv.save(sctKV, refresh),
+            update: (sctKV: KV) => api.secret.secret.kv.save(sctKV, refresh),
+            remove: (sctKV: KV) => api.secret.secret.kv.remove(sctKV, refresh)
           }"
           :columns="columns"
           :mapper="mapper"
