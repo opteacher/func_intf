@@ -77,7 +77,7 @@ function onUserCreated(user: any) {
       <template v-else>{{ user.key }}</template>
     </template>
     <template #role="{ record: user }">
-      <router-link to="/secret-manager/secret/role">{{ user.role }}</router-link>
+      <router-link to="/func_intf/secret/role">{{ user.role }}</router-link>
     </template>
     <template #creation_time="{ record: user }">
       {{ user.creation_time.format('YYYY/MM/DD HH:mm:ss') }}

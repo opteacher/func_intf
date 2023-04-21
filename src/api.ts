@@ -1,6 +1,6 @@
 import Role from './types/role'
 import Policy, { PlcPath } from './types/policy'
-import { RequestOptions, reqGet, reqPost } from './utils'
+import { RequestOptions, reqAll, reqGet, reqPost } from './utils'
 import User from './types/user'
 import KV from './types/kv'
 import Login from './types/login'
@@ -8,7 +8,7 @@ import { message } from 'ant-design-vue'
 import { v4 } from 'uuid'
 
 const toolOpns = { project: 'tool_box', type: 'api' } as RequestOptions
-const secretOpns = { project: 'secret-manager', type: 'api' } as RequestOptions
+const secretOpns = { project: 'secret_manager', type: 'api' } as RequestOptions
 
 const genWithLgnTkn = (): RequestOptions =>
   ({
@@ -158,6 +158,11 @@ export default {
             Object.assign(genWithLgnTkn(), secretOpns)
           ).then(refresh)
       }
+    }
+  },
+  chatGlm: {
+    zsk: {
+      all: () => reqAll('zsk', { project: 'chat_glm_config' })
     }
   }
 }

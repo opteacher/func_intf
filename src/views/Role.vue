@@ -56,7 +56,7 @@ onMounted(async () => {
     size="middle"
   >
     <template #policy="{ record: role }">
-      <router-link to="/secret-manager/secret/policy">{{ role.policy }}</router-link>
+      <router-link to="/func_intf/secret/policy">{{ role.policy }}</router-link>
     </template>
   </EditableTable>
 </template>

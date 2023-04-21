@@ -8,61 +8,73 @@ import Role from '../views/Role.vue'
 import User from '../views/User.vue'
 import Secret from '../views/Secret.vue'
 import Guide from '../views/Guide.vue'
+import ChatGLM from '../views/ChatGLM.vue'
+import ChatZSK from '../views/ChatZSK.vue'
 
 const routes: Array<RouteRecordRaw> = [
   {
-    path: '/secret-manager',
-    redirect: '/secret-manager/speech_translation'
+    path: '/func_intf',
+    redirect: '/func_intf/speech_translation'
   },
   {
-    path: '/secret-manager/speech_translation',
+    path: '/func_intf/speech_translation',
     name: 'speech_translation',
     component: SpeechTranslate
   },
   {
-    path: '/secret-manager/tool_box/encode',
+    path: '/func_intf/tool_box/encode',
     name: 'encode',
     component: Encode
   },
   {
-    path: '/secret-manager/tool_box/crypto',
+    path: '/func_intf/tool_box/crypto',
     name: 'crypto',
     component: Crypto
   },
   {
-    path: '/secret-manager/tool_box/random',
+    path: '/func_intf/tool_box/random',
     name: 'random',
     component: Random
   },
   {
-    path: '/secret-manager/secret/policy',
+    path: '/func_intf/secret/policy',
     name: 'policy',
     component: Policy
   },
   {
-    path: '/secret-manager/secret/role',
+    path: '/func_intf/secret/role',
     name: 'role',
     component: Role
   },
   {
-    path: '/secret-manager/secret/user',
+    path: '/func_intf/secret/user',
     name: 'user',
     component: User
   },
   {
-    path: '/secret-manager/secret/manage',
+    path: '/func_intf/secret/manage',
     name: 'secret',
     component: Secret
   },
   {
-    path: '/secret-manager/secret/guide',
+    path: '/func_intf/secret/guide',
     name: 'guide',
     component: Guide
+  },
+  {
+    path: '/func_intf/chat_glm/chat',
+    name: 'chat_glm',
+    component: ChatGLM
+  },
+  {
+    path: '/func_intf/chat_glm/zsk',
+    name: 'chat_zsk',
+    component: ChatZSK
   }
 ]
 
 const router = createRouter({
-  history: createWebHistory(process.env.BASE_URL || '/secret-manager'),
+  history: createWebHistory(process.env.BASE_URL || '/func_intf'),
   routes
 })
 

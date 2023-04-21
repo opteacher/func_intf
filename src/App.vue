@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { InboxOutlined, AudioOutlined, KeyOutlined } from '@ant-design/icons-vue'
+import { InboxOutlined, AudioOutlined, KeyOutlined, MessageOutlined } from '@ant-design/icons-vue'
 import router from './router'
 import { SelectInfo } from 'ant-design-vue/lib/menu/src/interface'
 import { reactive } from 'vue'
@@ -16,7 +16,7 @@ router.beforeEach(to => {
 })
 
 function onMuItmSelect(params: SelectInfo) {
-  router.push('/secret-manager/' + (params.keyPath || []).join('/'))
+  router.push('/func_intf/' + (params.keyPath || []).join('/'))
 }
 </script>
 
@@ -56,6 +56,12 @@ function onMuItmSelect(params: SelectInfo) {
             <a-menu-item key="role">角色</a-menu-item>
             <a-menu-item key="user">用户</a-menu-item>
             <a-menu-item key="manage">密钥</a-menu-item>
+          </a-sub-menu>
+          <a-sub-menu key="chat_glm">
+            <template #icon><message-outlined /></template>
+            <template #title>AI对话助手</template>
+            <a-menu-item key="chat">对话</a-menu-item>
+            <a-menu-item key="zsk">知识库</a-menu-item>
           </a-sub-menu>
         </a-menu>
       </a-layout-sider>

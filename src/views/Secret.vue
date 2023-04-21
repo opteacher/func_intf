@@ -148,7 +148,7 @@ function onCtxMuClick(treeKey: string, menuKey: 'create' | 'delete' | 'refresh')
       <a-form-item>
         <a-space :size="8">
           <a-button html-type="submit" type="primary">登录</a-button>
-          <a-button type="button" @click="() => $router.push('/secret-manager/secret/user')">
+          <a-button type="button" @click="() => $router.push('/func_intf/secret/user')">
             注册
           </a-button>
         </a-space>
