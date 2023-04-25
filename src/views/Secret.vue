@@ -6,7 +6,6 @@ import {
   SubnodeOutlined,
   DeleteOutlined
 } from '@ant-design/icons-vue'
-import EditableTable from '@lib/components/EditableTable.vue'
 import SctValue from '@/components/SctValue.vue'
 import { Modal, TreeProps, notification } from 'ant-design-vue'
 import { createVNode, onMounted, reactive, ref } from 'vue'

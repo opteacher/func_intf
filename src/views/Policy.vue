@@ -1,5 +1,4 @@
 <script setup lang="ts" name="Policy">
-import EditableTable from '@lib/components/EditableTable.vue'
 import Column from '@lib/types/column'
 import Mapper from '@lib/types/mapper'
 import Policy, { PlcPath, operOpns } from '@/types/policy'

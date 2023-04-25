@@ -8,7 +8,7 @@ module.exports = defineConfig({
       overlay: false
     },
     proxy: {
-      '/(speech_translation|tool_box|secret_manager|chat_glm_config)/(mdl|api)': {
+      '/(speech_translation|tools_box|secret_manager|chat_glm_config)/(mdl|api)': {
         target: 'http://192.168.1.11/',
         ws: true,
         changeOrigin: true

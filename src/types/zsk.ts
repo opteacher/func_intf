@@ -12,20 +12,20 @@ export type LibType = keyof typeof libTypes
 export const lTpOpns = Object.entries(libTypes).map(([value, label]) => ({ label, value }))
 
 export default class ZSK {
-  key: string
+  key: number
   name: string
   ltype: LibType
   params: any[]
 
   constructor() {
-    this.key = ''
+    this.key = 0
     this.name = ''
     this.ltype = 'fs'
     this.params = []
   }
 
   reset() {
-    this.key = ''
+    this.key = 0
     this.name = ''
     this.ltype = 'fs'
     this.params = []

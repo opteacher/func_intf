@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import EditableTable from '@lib/components/EditableTable.vue'
 import Mapper from '@lib/types/mapper'
 import Column from '@lib/types/column'
 import Role from '@/types/role'

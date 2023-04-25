@@ -1,13 +1,14 @@
 import Role from './types/role'
 import Policy, { PlcPath } from './types/policy'
-import { RequestOptions, reqAll, reqGet, reqPost } from './utils'
+import { RequestOptions, reqAll, reqDelete, reqGet, reqPost, reqPut } from './utils'
 import User from './types/user'
 import KV from './types/kv'
 import Login from './types/login'
 import { message } from 'ant-design-vue'
 import { v4 } from 'uuid'
+import ZSK from './types/zsk'
 
-const toolOpns = { project: 'tool_box', type: 'api' } as RequestOptions
+const toolOpns = { project: 'tools_box', type: 'api' } as RequestOptions
 const secretOpns = { project: 'secret_manager', type: 'api' } as RequestOptions
 
 const genWithLgnTkn = (): RequestOptions =>
@@ -162,7 +163,16 @@ export default {
   },
   chatGlm: {
     zsk: {
-      all: () => reqAll('zsk', { project: 'chat_glm_config' })
+      all: () => reqAll('zsk', { project: 'chat_glm_config' }),
+      add: (zsk: ZSK) => reqPost('zsk', zsk, { project: 'chat_glm_config' }),
+      update: (zsk: ZSK) => reqPut('zsk', zsk.key, zsk, { project: 'chat_glm_config' }),
+      remove: (zsk: ZSK) => reqDelete('zsk', zsk.key, { project: 'chat_glm_config' }),
+      download: (zsk: ZSK) =>
+        reqGet('zsk', 'download', {
+          project: 'chat_glm_config',
+          type: 'api',
+          axiosConfig: { params: { file: zsk.params[0] } }
+        })
     }
   }
 }
