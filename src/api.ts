@@ -167,12 +167,22 @@ export default {
       add: (zsk: ZSK) => reqPost('zsk', zsk, { project: 'chat_glm_config' }),
       update: (zsk: ZSK) => reqPut('zsk', zsk.key, zsk, { project: 'chat_glm_config' }),
       remove: (zsk: ZSK) => reqDelete('zsk', zsk.key, { project: 'chat_glm_config' }),
-      download: (zsk: ZSK) =>
-        reqGet('zsk', 'download', {
+      download: async (zsk: ZSK) => {
+        const content = await reqGet('zsk', 'download', {
           project: 'chat_glm_config',
           type: 'api',
           axiosConfig: { params: { file: zsk.params[0] } }
         })
+        const link = document.createElement('a')
+
+        // 创建对象url
+        link.href = window.URL.createObjectURL(new Blob([content]))
+        link.download = zsk.params[0].split('/').pop()
+        link.style.display = 'none'
+        document.body.appendChild(link)
+        link.click()
+        document.body.removeChild(link)
+      }
     }
   }
 }

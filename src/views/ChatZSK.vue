@@ -32,5 +32,15 @@ const emitter = new Emitter()
         <a @click.stop="() => api.chatGlm.zsk.download(zsk)"><download-outlined /></a>
       </a-space>
     </template>
+    <template #imported="{ record: zsk }">
+      <a-tag :color="zsk.imported ? 'success' : 'warning'">
+        {{ zsk.imported ? '已导入' : '未导入' }}
+      </a-tag>
+    </template>
+    <template #importedEDT="{ editing: zsk }">
+      <a-button class="w-full" :disabled="!zsk.key || zsk.imported" type="primary" ghost>
+        {{ zsk.imported ? '已导入' : '导入' }}
+      </a-button>
+    </template>
   </EditableTable>
 </template>

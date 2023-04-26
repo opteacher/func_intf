@@ -16,12 +16,14 @@ export default class ZSK {
   name: string
   ltype: LibType
   params: any[]
+  imported: boolean
 
   constructor() {
     this.key = 0
     this.name = ''
     this.ltype = 'fs'
     this.params = []
+    this.imported = false
   }
 
   reset() {
@@ -29,6 +31,7 @@ export default class ZSK {
     this.name = ''
     this.ltype = 'fs'
     this.params = []
+    this.imported = false
   }
 
   static copy(src: any, tgt?: ZSK, force = false): ZSK {
@@ -39,13 +42,15 @@ export default class ZSK {
 export const columns = [
   new Column('名称', 'name'),
   new Column('类型', 'ltype'),
-  new Column('参数', 'params')
+  new Column('参数', 'params'),
+  new Column('导入', 'imported')
 ]
 
 export const mapper = new Mapper({
   name: {
     label: '名称',
-    type: 'Input'
+    type: 'Input',
+    rules: [{ required: true, message: '必须输入名称！' }]
   },
   ltype: {
     label: '类型',
@@ -55,5 +60,11 @@ export const mapper = new Mapper({
   params: {
     label: '参数',
     type: 'Unknown'
+  },
+  imported: {
+    label: '导入',
+    desc: '上传或配置号目标知识库后\n需要导入到Fess搜索引擎才能起效',
+    type: 'Checkbox',
+    disabled: true
   }
 })
