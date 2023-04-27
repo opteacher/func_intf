@@ -17,6 +17,7 @@ export default class ZSK {
   ltype: LibType
   params: any[]
   imported: boolean
+  loading: boolean
 
   constructor() {
     this.key = 0
@@ -24,6 +25,7 @@ export default class ZSK {
     this.ltype = 'fs'
     this.params = []
     this.imported = false
+    this.loading = false
   }
 
   reset() {
@@ -32,10 +34,11 @@ export default class ZSK {
     this.ltype = 'fs'
     this.params = []
     this.imported = false
+    this.loading = false
   }
 
   static copy(src: any, tgt?: ZSK, force = false): ZSK {
-    return gnlCpy(ZSK, src, tgt, { force })
+    return gnlCpy(ZSK, src, tgt, { force, ignProps: ['loading'] })
   }
 }
 

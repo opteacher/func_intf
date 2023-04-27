@@ -1,15 +1,26 @@
 import Role from './types/role'
 import Policy, { PlcPath } from './types/policy'
-import { RequestOptions, reqAll, reqDelete, reqGet, reqPost, reqPut } from './utils'
+import {
+  RequestOptions,
+  intervalCheck,
+  reqAll,
+  reqDelete,
+  reqGet,
+  reqPost,
+  reqPut,
+  setProp
+} from './utils'
 import User from './types/user'
 import KV from './types/kv'
 import Login from './types/login'
 import { message } from 'ant-design-vue'
 import { v4 } from 'uuid'
-import ZSK from './types/zsk'
+import ZSK, { LibType } from './types/zsk'
 
 const toolOpns = { project: 'tools_box', type: 'api' } as RequestOptions
 const secretOpns = { project: 'secret_manager', type: 'api' } as RequestOptions
+const chatGlmOpns = { project: 'chat_glm_config' } as RequestOptions
+const chatGlmApiOpns = { project: 'chat_glm_config', type: 'api' } as RequestOptions
 
 const genWithLgnTkn = (): RequestOptions =>
   ({
@@ -18,7 +29,7 @@ const genWithLgnTkn = (): RequestOptions =>
     }
   } as RequestOptions)
 
-export default {
+const expIns = {
   toolBox: {
     encode: (text: string, encType: string, extra?: any) =>
       reqGet(
@@ -163,10 +174,10 @@ export default {
   },
   chatGlm: {
     zsk: {
-      all: () => reqAll('zsk', { project: 'chat_glm_config' }),
-      add: (zsk: ZSK) => reqPost('zsk', zsk, { project: 'chat_glm_config' }),
-      update: (zsk: ZSK) => reqPut('zsk', zsk.key, zsk, { project: 'chat_glm_config' }),
-      remove: (zsk: ZSK) => reqDelete('zsk', zsk.key, { project: 'chat_glm_config' }),
+      all: () => reqAll('zsk', chatGlmOpns),
+      add: (zsk: ZSK) => reqPost('zsk', zsk, chatGlmOpns),
+      update: (zsk: ZSK) => reqPut('zsk', zsk.key, zsk, chatGlmOpns),
+      remove: (zsk: ZSK) => reqDelete('zsk', zsk.key, chatGlmApiOpns),
       download: async (zsk: ZSK) => {
         const content = await reqGet('zsk', 'download', {
           project: 'chat_glm_config',
@@ -182,7 +193,22 @@ export default {
         document.body.appendChild(link)
         link.click()
         document.body.removeChild(link)
-      }
+      },
+      reload: (zsk: ZSK) =>
+        reqPost(`zsk/${zsk.key}/reload`, undefined, {
+          project: 'chat_glm_config',
+          type: 'api'
+        }).then(() => {
+          intervalCheck({
+            chkFun: async () =>
+              setProp(zsk, 'loading', await expIns.chatGlm.zsk.crawling(zsk.ltype)),
+            middle: {
+              succeed: () => reqPut('zsk', zsk.key, { imported: true }, chatGlmOpns)
+            }
+          })
+        }),
+      crawling: (ltype: LibType) => reqGet('zsk', `${ltype}/crawling`, chatGlmApiOpns)
     }
   }
 }
+export default expIns
