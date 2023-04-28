@@ -2,17 +2,20 @@
 import ZSK, { LibType, columns, libTypes, mapper } from '../types/zsk'
 import api from '../api'
 import { TinyEmitter as Emitter } from 'tiny-emitter'
-import { DownloadOutlined } from '@ant-design/icons-vue'
-import { intervalCheck, reqPut } from '@/utils'
+import { DownloadOutlined, SyncOutlined, CheckCircleOutlined } from '@ant-design/icons-vue'
+import { intervalCheck, setProp } from '@/utils'
 
 const emitter = new Emitter()
 
 async function onRefresh(zsks: ZSK[]) {
   for (const ltype of Object.keys(libTypes)) {
     intervalCheck({
-      chkFun: () => api.chatGlm.zsk.crawling(ltype as LibType),
+      chkFun: () => api.chatGlm.zsk.crawling(ltype as LibType).then(running => !running),
+      interval: 5000,
       middle: {
-        succeed: () => reqPut('zsk', zsk.key, { imported: true }, chatGlmOpns)
+        succeed: () => {
+          zsks.filter(zsk => zsk.ltype === ltype).map(zsk => setProp(zsk, 'status', 'imported'))
+        }
       }
     })
   }
@@ -45,29 +48,19 @@ async function onRefresh(zsks: ZSK[]) {
         <a @click.stop="() => api.chatGlm.zsk.download(zsk)"><download-outlined /></a>
       </a-space>
     </template>
-    <template #imported="{ record: zsk }">
-      <a-tag v-if="zsk.imported" color="success">已导入</a-tag>
-      <a-tag v-else-if="zsk.loading" color="processing">导入中……</a-tag>
-      <a-popconfirm
-        v-else
-        title="确定导入知识库？"
-        ok-text="确定"
-        cancel-text="取消"
-        @confirm="() => api.chatGlm.zsk.reload(zsk)"
-      >
-        <a-button size="small" @click.stop>未导入</a-button>
-      </a-popconfirm>
-    </template>
-    <template #importedEDT="{ editing: zsk }">
-      <a-button
-        class="w-full"
-        :disabled="!zsk.key || zsk.loading || zsk.imported"
-        :loading="zsk.loading"
-        type="primary"
-        ghost
-      >
-        {{ zsk.imported ? '已导入' : '导入' }}
-      </a-button>
+    <template #status="{ record: zsk }">
+      <a-tag v-if="zsk.status === 'loading'" color="processing">
+        <template #icon>
+          <sync-outlined :spin="true" />
+        </template>
+        爬取中
+      </a-tag>
+      <a-tag v-else color="success">
+        <template #icon>
+          <check-circle-outlined />
+        </template>
+        已加载
+      </a-tag>
     </template>
   </EditableTable>
 </template>

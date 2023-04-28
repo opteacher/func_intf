@@ -175,7 +175,7 @@ const expIns = {
   chatGlm: {
     zsk: {
       all: () => reqAll('zsk', chatGlmOpns),
-      add: (zsk: ZSK) => reqPost('zsk', zsk, chatGlmOpns),
+      add: (zsk: ZSK) => reqPost('zsk', zsk, chatGlmApiOpns),
       update: (zsk: ZSK) => reqPut('zsk', zsk.key, zsk, chatGlmOpns),
       remove: (zsk: ZSK) => reqDelete('zsk', zsk.key, chatGlmApiOpns),
       download: async (zsk: ZSK) => {
@@ -195,19 +195,19 @@ const expIns = {
         document.body.removeChild(link)
       },
       reload: (zsk: ZSK) =>
-        reqPost(`zsk/${zsk.key}/reload`, undefined, {
+        reqPost(`zsk/${zsk.ltype}/reload`, undefined, {
           project: 'chat_glm_config',
           type: 'api'
         }).then(() => {
-          intervalCheck({
-            chkFun: async () =>
-              setProp(zsk, 'loading', await expIns.chatGlm.zsk.crawling(zsk.ltype)),
-            middle: {
-              succeed: () => reqPut('zsk', zsk.key, { imported: true }, chatGlmOpns)
-            }
-          })
+          // 刷新页面
         }),
-      crawling: (ltype: LibType) => reqGet('zsk', `${ltype}/crawling`, chatGlmApiOpns)
+      crawling: (ltype: LibType) =>
+        reqGet('zsk', `${ltype}/crawling`, {
+          ...chatGlmApiOpns,
+          messages: {
+            notShow: true
+          }
+        })
     }
   }
 }
