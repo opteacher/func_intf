@@ -13,6 +13,10 @@ import ChatZSK from '../views/ChatZSK.vue'
 
 const routes: Array<RouteRecordRaw> = [
   {
+    path: '/',
+    redirect: '/func_intf/speech_translation'
+  },
+  {
     path: '/func_intf',
     redirect: '/func_intf/speech_translation'
   },

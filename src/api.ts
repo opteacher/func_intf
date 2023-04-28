@@ -1,15 +1,6 @@
 import Role from './types/role'
 import Policy, { PlcPath } from './types/policy'
-import {
-  RequestOptions,
-  intervalCheck,
-  reqAll,
-  reqDelete,
-  reqGet,
-  reqPost,
-  reqPut,
-  setProp
-} from './utils'
+import { RequestOptions, reqAll, reqDelete, reqGet, reqPost, reqPut } from './utils'
 import User from './types/user'
 import KV from './types/kv'
 import Login from './types/login'
@@ -17,10 +8,26 @@ import { message } from 'ant-design-vue'
 import { v4 } from 'uuid'
 import ZSK, { LibType } from './types/zsk'
 
-const toolOpns = { project: 'tools_box', type: 'api' } as RequestOptions
-const secretOpns = { project: 'secret_manager', type: 'api' } as RequestOptions
-const chatGlmOpns = { project: 'chat_glm_config' } as RequestOptions
-const chatGlmApiOpns = { project: 'chat_glm_config', type: 'api' } as RequestOptions
+const host = 'http://38.152.2.152'
+const toolBaseURL = { baseURL: host + ':3121' }
+const toolOpns = {
+  project: 'tools_box',
+  type: 'api'
+} as RequestOptions
+const secretOpns = {
+  project: 'secret_manager',
+  type: 'api',
+  axiosConfig: { baseURL: host + ':3143' }
+} as RequestOptions
+const chatGlmOpns = {
+  project: 'chat_glm_config',
+  axiosConfig: { baseURL: host + ':8441' }
+} as RequestOptions
+const chatGlmApiOpns = {
+  project: 'chat_glm_config',
+  type: 'api',
+  axiosConfig: { baseURL: host + ':8441' }
+} as RequestOptions
 
 const genWithLgnTkn = (): RequestOptions =>
   ({
@@ -32,38 +39,20 @@ const genWithLgnTkn = (): RequestOptions =>
 const expIns = {
   toolBox: {
     encode: (text: string, encType: string, extra?: any) =>
-      reqGet(
-        'encode',
-        undefined,
-        Object.assign(
-          {
-            axiosConfig: { params: Object.assign(extra || {}, { text, code: encType }) }
-          },
-          toolOpns
-        )
-      ),
+      reqGet('encode', undefined, {
+        ...toolOpns,
+        axiosConfig: { ...toolBaseURL, params: Object.assign(extra || {}, { text, code: encType }) }
+      }),
     crypto: (crypt: 'encrypt' | 'decrypt', alg: string, data: string[], secret?: string) =>
-      reqGet(
-        'crypto',
-        crypt,
-        Object.assign(
-          {
-            axiosConfig: { params: { data, alg, secret } }
-          },
-          toolOpns
-        )
-      ),
+      reqGet('crypto', crypt, {
+        ...toolOpns,
+        axiosConfig: { ...toolBaseURL, params: { data, alg, secret } }
+      }),
     random: (randType: 'number' | 'uuid' | 'string' | 'name', params?: any) =>
-      reqGet(
-        'random',
-        randType,
-        Object.assign(
-          {
-            axiosConfig: { params: Object.assign(params || {}, { mode: randType }) }
-          },
-          toolOpns
-        )
-      )
+      reqGet('random', randType, {
+        ...toolOpns,
+        axiosConfig: { ...toolBaseURL, params: Object.assign(params || {}, { mode: randType }) }
+      })
   },
   secret: {
     policy: {
