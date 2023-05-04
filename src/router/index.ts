@@ -1,4 +1,4 @@
-import { createRouter, createWebHistory, RouteRecordRaw } from 'vue-router'
+import { createRouter, RouteRecordRaw, createWebHashHistory } from 'vue-router'
 import SpeechTranslate from '../views/SpeechTranslate.vue'
 import Encode from '../views/Encode.vue'
 import Crypto from '../views/Crypto.vue'
@@ -78,7 +78,7 @@ const routes: Array<RouteRecordRaw> = [
 ]
 
 const router = createRouter({
-  history: createWebHistory(process.env.BASE_URL || '/func_intf'),
+  history: createWebHashHistory(process.env.BASE_URL || '/func_intf'),
   routes
 })
 

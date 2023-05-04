@@ -4,7 +4,7 @@
       name="file"
       :data="data"
       v-model:file-list="files"
-      action="/speech_translation/api/v1/translate"
+      :action="`${isProd ? 'http://38.152.2.152:9095' : ''}/speech_translation/api/v1/translate`"
       :showUploadList="false"
       @change="onChange"
     >
@@ -36,6 +36,7 @@
 import { UploadChangeParam } from 'ant-design-vue'
 import { reactive, ref } from 'vue'
 import { UploadOutlined } from '@ant-design/icons-vue'
+import { isProd } from '../api'
 
 const files = ref([])
 const loading = ref(false)

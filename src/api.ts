@@ -7,51 +7,56 @@ import Login from './types/login'
 import { message } from 'ant-design-vue'
 import { v4 } from 'uuid'
 import ZSK, { LibType } from './types/zsk'
+import { AxiosRequestConfig, AxiosRequestHeaders } from 'axios'
 
-const host = 'http://38.152.2.152'
-const toolBaseURL = { baseURL: host + ':3121' }
+export const isProd = process.env.NODE_ENV === 'production'
+const toolBaseURL = 'http://38.152.2.152:3121'
 const toolOpns = {
   project: 'tools_box',
   type: 'api'
 } as RequestOptions
+const secretBaseURL = 'http://38.152.2.152:3143'
 const secretOpns = {
   project: 'secret_manager',
   type: 'api',
-  axiosConfig: { baseURL: host + ':3143' }
+  ...(isProd ? { axiosConfig: { baseURL: secretBaseURL } } : {})
 } as RequestOptions
+const chatBaseURL = 'http://38.152.2.152:8441'
 const chatGlmOpns = {
   project: 'chat_glm_config',
-  axiosConfig: { baseURL: host + ':8441' }
+  ...(isProd ? { axiosConfig: { baseURL: chatBaseURL } } : {})
 } as RequestOptions
-const chatGlmApiOpns = {
-  project: 'chat_glm_config',
-  type: 'api',
-  axiosConfig: { baseURL: host + ':8441' }
-} as RequestOptions
+const chatGlmApiOpns = { type: 'api', ...chatGlmOpns } as RequestOptions
 
-const genWithLgnTkn = (): RequestOptions =>
-  ({
-    axiosConfig: {
-      headers: { 'X-Login-Token': window.localStorage.getItem('token') }
-    }
-  } as RequestOptions)
+const bindLgnTkn = (): RequestOptions => {
+  ;(secretOpns.axiosConfig as AxiosRequestConfig<any>).headers = {
+    'X-Login-Token': window.localStorage.getItem('token')
+  } as AxiosRequestHeaders
+  return secretOpns
+}
 
 const expIns = {
   toolBox: {
     encode: (text: string, encType: string, extra?: any) =>
       reqGet('encode', undefined, {
         ...toolOpns,
-        axiosConfig: { ...toolBaseURL, params: Object.assign(extra || {}, { text, code: encType }) }
+        axiosConfig: {
+          baseURL: isProd ? toolBaseURL : '',
+          params: Object.assign(extra || {}, { text, code: encType })
+        }
       }),
     crypto: (crypt: 'encrypt' | 'decrypt', alg: string, data: string[], secret?: string) =>
       reqGet('crypto', crypt, {
         ...toolOpns,
-        axiosConfig: { ...toolBaseURL, params: { data, alg, secret } }
+        axiosConfig: { baseURL: isProd ? toolBaseURL : '', params: { data, alg, secret } }
       }),
     random: (randType: 'number' | 'uuid' | 'string' | 'name', params?: any) =>
       reqGet('random', randType, {
         ...toolOpns,
-        axiosConfig: { ...toolBaseURL, params: Object.assign(params || {}, { mode: randType }) }
+        axiosConfig: {
+          baseURL: isProd ? toolBaseURL : '',
+          params: Object.assign(params || {}, { mode: randType })
+        }
       })
   },
   secret: {
@@ -109,8 +114,8 @@ const expIns = {
       }
     },
     role: {
-      all: () => reqPost('role', { opera: 'list' }, Object.assign({ copy: Role.copy }, secretOpns)),
-      add: (role: Role) => reqPost('role', Object.assign({ opera: 'create' }, role), secretOpns),
+      all: () => reqPost('role', { opera: 'list' }, { ...secretOpns, copy: Role.copy }),
+      add: (role: Role) => reqPost('role', { opera: 'create', ...role }, secretOpns),
       remove: (role: Role) => reqPost('role', { opera: 'delete', name: role.name }, secretOpns)
     },
     user: {
@@ -130,16 +135,15 @@ const expIns = {
         })
     },
     secret: {
-      all: () => reqPost('secret', { opera: 'list' }, Object.assign(genWithLgnTkn(), secretOpns)),
-      remove: (secret: string) =>
-        reqPost('secret', { opera: 'delete', secret }, Object.assign(genWithLgnTkn(), secretOpns)),
+      all: () => reqPost('secret', { opera: 'list' }, bindLgnTkn()),
+      remove: (secret: string) => reqPost('secret', { opera: 'delete', secret }, bindLgnTkn()),
       kv: {
         all: (secret: string) =>
           secret
             ? reqPost(
                 'secret',
                 { opera: 'get', secret },
-                Object.assign({ notShow: true }, genWithLgnTkn(), secretOpns)
+                { messages: { notShow: true }, ...bindLgnTkn() }
               ).then(res =>
                 Object.entries(res).map(([skey, svalue]) =>
                   KV.copy({ key: v4(), secret, skey, svalue })
@@ -147,17 +151,9 @@ const expIns = {
               )
             : [],
         save: (sctKV: KV, refresh = () => console.log()) =>
-          reqPost(
-            'secret',
-            Object.assign({ opera: 'put' }, sctKV),
-            Object.assign(genWithLgnTkn(), secretOpns)
-          ).then(refresh),
+          reqPost('secret', Object.assign({ opera: 'put' }, sctKV), bindLgnTkn()).then(refresh),
         remove: (sctKV: KV, refresh: () => any) =>
-          reqPost(
-            'secret',
-            Object.assign({ opera: 'delete' }, sctKV),
-            Object.assign(genWithLgnTkn(), secretOpns)
-          ).then(refresh)
+          reqPost('secret', Object.assign({ opera: 'delete' }, sctKV), bindLgnTkn()).then(refresh)
       }
     }
   },
@@ -169,8 +165,7 @@ const expIns = {
       remove: (zsk: ZSK) => reqDelete('zsk', zsk.key, chatGlmApiOpns),
       download: async (zsk: ZSK) => {
         const content = await reqGet('zsk', 'download', {
-          project: 'chat_glm_config',
-          type: 'api',
+          ...chatGlmApiOpns,
           axiosConfig: { params: { file: zsk.params[0] } }
         })
         const link = document.createElement('a')
@@ -184,10 +179,7 @@ const expIns = {
         document.body.removeChild(link)
       },
       reload: (zsk: ZSK) =>
-        reqPost(`zsk/${zsk.ltype}/reload`, undefined, {
-          project: 'chat_glm_config',
-          type: 'api'
-        }).then(() => {
+        reqPost(`zsk/${zsk.ltype}/reload`, undefined, chatGlmApiOpns).then(() => {
           // 刷新页面
         }),
       crawling: (ltype: LibType) =>
