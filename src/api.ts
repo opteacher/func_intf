@@ -10,18 +10,18 @@ import ZSK, { LibType } from './types/zsk'
 import { AxiosRequestConfig, AxiosRequestHeaders } from 'axios'
 
 export const isProd = process.env.NODE_ENV === 'production'
-const toolBaseURL = 'http://38.152.2.152:3121'
+export const toolBaseURL = 'http://38.152.2.152:3121'
 const toolOpns = {
   project: 'tools_box',
   type: 'api'
 } as RequestOptions
-const secretBaseURL = 'http://38.152.2.152:3143'
+export const secretBaseURL = 'http://38.152.2.152:3143'
 const secretOpns = {
   project: 'secret_manager',
   type: 'api',
   ...(isProd ? { axiosConfig: { baseURL: secretBaseURL } } : {})
 } as RequestOptions
-const chatBaseURL = 'http://38.152.2.152:8441'
+export const chatBaseURL = 'http://38.152.2.152:8441'
 const chatGlmOpns = {
   project: 'chat_glm_config',
   ...(isProd ? { axiosConfig: { baseURL: chatBaseURL } } : {})

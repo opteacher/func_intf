@@ -3,5 +3,5 @@ import ChatIframe from '../components/ChatIframe.vue'
 </script>
 
 <template>
-  <ChatIframe :port="17860" />
+  <ChatIframe :port="6241" />
 </template>

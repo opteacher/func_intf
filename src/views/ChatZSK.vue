@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import ZSK, { LibType, columns, libTypes, mapper } from '../types/zsk'
-import api from '../api'
+import api, { isProd, chatBaseURL } from '../api'
 import { TinyEmitter as Emitter } from 'tiny-emitter'
 import { DownloadOutlined, SyncOutlined, CheckCircleOutlined } from '@ant-design/icons-vue'
 import { intervalCheck, setProp } from '@/utils'
@@ -10,7 +10,11 @@ const emitter = new Emitter()
 async function onRefresh(zsks: ZSK[]) {
   for (const ltype of Object.keys(libTypes)) {
     intervalCheck({
-      chkFun: () => api.chatGlm.zsk.crawling(ltype as LibType).then(running => !running),
+      chkFun: (stop: () => boolean) =>
+        api.chatGlm.zsk
+          .crawling(ltype as LibType)
+          .then((running: boolean) => !running)
+          .catch(stop),
       interval: 5000,
       middle: {
         succeed: () => {
@@ -37,7 +41,7 @@ async function onRefresh(zsks: ZSK[]) {
     <template #paramsEDT="{ editing: zsk }">
       <UploadFile
         v-if="zsk.ltype === 'fs'"
-        path="/chat_glm_config/api/v1/zsk/upload"
+        :path="`${isProd ? chatBaseURL : ''}/chat_glm_config/api/v1/zsk/upload`"
         :form="zsk"
         v-model:value="zsk.params"
       />

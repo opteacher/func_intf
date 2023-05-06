@@ -62,6 +62,8 @@ function onMuItmSelect(params: SelectInfo) {
             <template #title>AI对话助手</template>
             <a-menu-item key="chat">对话</a-menu-item>
             <a-menu-item key="zsk">知识库</a-menu-item>
+            <a-menu-item key="fess">Fess引擎</a-menu-item>
+            <a-menu-item key="web">Web页面</a-menu-item>
           </a-sub-menu>
         </a-menu>
       </a-layout-sider>
