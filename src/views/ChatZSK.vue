@@ -2,7 +2,7 @@
 import ZSK, { LibType, columns, libTypes, mapper } from '../types/zsk'
 import api, { isProd, chatBaseURL } from '../api'
 import { TinyEmitter as Emitter } from 'tiny-emitter'
-import { DownloadOutlined, SyncOutlined, CheckCircleOutlined } from '@ant-design/icons-vue'
+import { SyncOutlined, CheckCircleOutlined, FileTextOutlined } from '@ant-design/icons-vue'
 import { intervalCheck, setProp } from '@/utils'
 
 const emitter = new Emitter()
@@ -46,11 +46,19 @@ async function onRefresh(zsks: ZSK[]) {
         v-model:value="zsk.params"
       />
     </template>
+    <template #paramsVW="{ current: zsk }">
+      <ul v-if="zsk.ltype === 'fs'" class="list-none m-0 p-0">
+        <li v-for="(item, index) in zsk.params" :key="item">
+          {{ item }}&nbsp;
+          <file-text-outlined
+            class="hover:text-primary cursor-pointer"
+            @click="() => api.chatGlm.zsk.viewFile(zsk, index)"
+          />
+        </li>
+      </ul>
+    </template>
     <template #params="{ record: zsk }">
-      <a-space v-if="zsk.ltype === 'fs'">
-        {{ zsk.params[0] }}
-        <a @click.stop="() => api.chatGlm.zsk.download(zsk)"><download-outlined /></a>
-      </a-space>
+      <a-space v-if="zsk.ltype === 'fs'">{{ zsk.params[0] }}……</a-space>
     </template>
     <template #status="{ record: zsk }">
       <a-tag v-if="zsk.status === 'loading'" color="processing">

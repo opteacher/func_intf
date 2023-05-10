@@ -163,20 +163,9 @@ const expIns = {
       add: (zsk: ZSK) => reqPost('zsk', zsk, chatGlmApiOpns),
       update: (zsk: ZSK) => reqPut('zsk', zsk.key, zsk, chatGlmOpns),
       remove: (zsk: ZSK) => reqDelete('zsk', zsk.key, chatGlmApiOpns),
-      download: async (zsk: ZSK) => {
-        const content = await reqGet('zsk', 'download', {
-          ...chatGlmApiOpns,
-          axiosConfig: { params: { file: zsk.params[0] } }
-        })
-        const link = document.createElement('a')
-
-        // 创建对象url
-        link.href = window.URL.createObjectURL(new Blob([content]))
-        link.download = zsk.params[0].split('/').pop()
-        link.style.display = 'none'
-        document.body.appendChild(link)
-        link.click()
-        document.body.removeChild(link)
+      viewFile: async (zsk: ZSK, fIdx: number) => {
+        const path = await reqGet('zsk', `${zsk.key}/file/${fIdx}/view`, chatGlmApiOpns)
+        window.open((isProd ? chatBaseURL : 'http://192.168.1.11') + path, '_blank')
       },
       reload: (zsk: ZSK) =>
         reqPost(`zsk/${zsk.ltype}/reload`, undefined, chatGlmApiOpns).then(() => {
