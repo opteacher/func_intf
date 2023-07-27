@@ -51,7 +51,7 @@ const expIns = {
         axiosConfig: { baseURL: isProd ? toolBaseURL : '', params: { data, alg, secret } }
       }),
     random: (randType: 'number' | 'uuid' | 'string' | 'name', params?: any) =>
-      reqGet('random', randType, {
+      reqGet('random', undefined, {
         ...toolOpns,
         axiosConfig: {
           baseURL: isProd ? toolBaseURL : '',

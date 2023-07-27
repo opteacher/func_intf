@@ -9,9 +9,6 @@ import User from '../views/User.vue'
 import Secret from '../views/Secret.vue'
 import Guide from '../views/Guide.vue'
 import ChatGLM from '../views/ChatGLM.vue'
-import ChatZSK from '../views/ChatZSK.vue'
-import ChatFess from '../views/ChatFess.vue'
-import ChatWeb from '../views/ChatWeb.vue'
 
 const routes: Array<RouteRecordRaw> = [
   {
@@ -71,21 +68,6 @@ const routes: Array<RouteRecordRaw> = [
     path: '/func_intf/chat_glm/chat',
     name: 'chat_glm',
     component: ChatGLM
-  },
-  {
-    path: '/func_intf/chat_glm/zsk',
-    name: 'chat_zsk',
-    component: ChatZSK
-  },
-  {
-    path: '/func_intf/chat_glm/fess',
-    name: 'chat_fess',
-    component: ChatFess
-  },
-  {
-    path: '/func_intf/chat_glm/web',
-    name: 'chat_web',
-    component: ChatWeb
   }
 ]
 

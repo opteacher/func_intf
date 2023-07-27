@@ -20,10 +20,13 @@
     "xlsx": "https://cdn.sheetjs.com/xlsx-0.18.12/xlsx-0.18.12.tgz"
   },
   "devDependencies": {
+    "@istanbuljs/nyc-config-typescript": "^1.0.2",
     "@rushstack/eslint-patch": "^1.2.0",
     "@types/uuid": "^8.3.4",
     "@typescript-eslint/eslint-plugin": "^5.4.0",
     "@typescript-eslint/parser": "^5.4.0",
+    "@vitejs/plugin-vue": "^4.2.3",
+    "@vitejs/plugin-vue-jsx": "^3.0.1",
     "@vue/cli-plugin-babel": "~5.0.0",
     "@vue/cli-plugin-eslint": "~5.0.0",
     "@vue/cli-plugin-router": "~5.0.0",
@@ -42,6 +45,7 @@
     "sass": "^1.32.7",
     "sass-loader": "^12.0.0",
     "tailwindcss": "^3.2.7",
-    "typescript": "~4.5.5"
+    "typescript": "~4.5.5",
+    "vite-plugin-istanbul": "^5.0.0"
   }
 }
