@@ -12,6 +12,11 @@ module.exports = defineConfig({
         target: 'http://192.168.1.11/',
         ws: true,
         changeOrigin: true
+      },
+      '/ait-xecutor/service/rs': {
+        target: 'http://192.168.1.11/',
+        ws: true,
+        changeOrigin: true
       }
     }
   },

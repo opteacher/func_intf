@@ -9,6 +9,7 @@ import User from '../views/User.vue'
 import Secret from '../views/Secret.vue'
 import Guide from '../views/Guide.vue'
 import ChatGLM from '../views/ChatGLM.vue'
+import ImageOptimize from '../views/ImageOptimize.vue'
 
 const routes: Array<RouteRecordRaw> = [
   {
@@ -68,6 +69,16 @@ const routes: Array<RouteRecordRaw> = [
     path: '/func_intf/chat_glm/chat',
     name: 'chat_glm',
     component: ChatGLM
+  },
+  {
+    path: '/func_intf/image_optimize/denoise',
+    name: 'image_denoise',
+    component: ImageOptimize
+  },
+  {
+    path: '/func_intf/image_optimize/faceRes',
+    name: 'image_faceRes',
+    component: ImageOptimize
   }
 ]
 

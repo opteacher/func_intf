@@ -1,5 +1,11 @@
 <script lang="ts" setup>
-import { InboxOutlined, AudioOutlined, KeyOutlined, MessageOutlined } from '@ant-design/icons-vue'
+import {
+  InboxOutlined,
+  AudioOutlined,
+  KeyOutlined,
+  MessageOutlined,
+  PictureOutlined
+} from '@ant-design/icons-vue'
 import router from './router'
 import { SelectInfo } from 'ant-design-vue/lib/menu/src/interface'
 import { reactive } from 'vue'
@@ -61,6 +67,12 @@ function onMuItmSelect(params: SelectInfo) {
             <template #icon><message-outlined /></template>
             <template #title>AI对话助手</template>
             <a-menu-item key="chat">对话</a-menu-item>
+          </a-sub-menu>
+          <a-sub-menu key="image_optimize">
+            <template #icon><PictureOutlined /></template>
+            <template #title>图像处理</template>
+            <a-menu-item key="denoise">图像去噪</a-menu-item>
+            <a-menu-item key="faceRes">人脸修复</a-menu-item>
           </a-sub-menu>
         </a-menu>
       </a-layout-sider>
