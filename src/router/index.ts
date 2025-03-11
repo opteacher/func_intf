@@ -10,6 +10,8 @@ import Secret from '../views/Secret.vue'
 import Guide from '../views/Guide.vue'
 import ChatGLM from '../views/ChatGLM.vue'
 import ImageOptimize from '../views/ImageOptimize.vue'
+import CustomFormView from '../views/CustomFormView.vue'
+import CustomFormDsgn from '../views/CustomFormDsgn.vue'
 
 const routes: Array<RouteRecordRaw> = [
   {
@@ -79,6 +81,16 @@ const routes: Array<RouteRecordRaw> = [
     path: '/func_intf/image_optimize/faceRes',
     name: 'image_faceRes',
     component: ImageOptimize
+  },
+  {
+    path: '/func_intf/custom_form/view',
+    name: 'custom_formView',
+    component: CustomFormView
+  },
+  {
+    path: '/func_intf/custom_form/design',
+    name: 'custom_formDsgn',
+    component: CustomFormDsgn
   }
 ]
 

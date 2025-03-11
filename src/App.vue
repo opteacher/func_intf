@@ -4,12 +4,17 @@ import {
   AudioOutlined,
   KeyOutlined,
   MessageOutlined,
-  PictureOutlined
+  PictureOutlined,
+  FormOutlined
 } from '@ant-design/icons-vue'
 import router from './router'
 import { SelectInfo } from 'ant-design-vue/lib/menu/src/interface'
-import { reactive } from 'vue'
+import { reactive, ref } from 'vue'
+import { useRoute } from 'vue-router'
+import { onMounted } from 'vue'
+import { onUpdated } from 'vue'
 
+const route = useRoute()
 const sideKeys = reactive<string[]>([])
 const openKeys = reactive<string[]>([])
 
@@ -27,7 +32,8 @@ function onMuItmSelect(params: SelectInfo) {
 </script>
 
 <template>
-  <a-layout class="h-full">
+  <div v-if="route.query.fullView" class="bg-white h-full p-2.5"><router-view /></div>
+  <a-layout v-else class="h-full">
     <a-layout-header class="pl-0">
       <div class="h-full p-2.5 bg-white" style="width: 200px">
         <div class="h-full bg-gray-300 rounded-sm" />
@@ -73,6 +79,12 @@ function onMuItmSelect(params: SelectInfo) {
             <template #title>图像处理</template>
             <a-menu-item key="denoise">图像去噪</a-menu-item>
             <a-menu-item key="faceRes">人脸修复</a-menu-item>
+          </a-sub-menu>
+          <a-sub-menu key="custom_form">
+            <template #icon><FormOutlined /></template>
+            <template #title>自定义表单</template>
+            <a-menu-item key="view">展示表单</a-menu-item>
+            <a-menu-item key="design">设计表单</a-menu-item>
           </a-sub-menu>
         </a-menu>
       </a-layout-sider>
