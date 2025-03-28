@@ -1,1 +1,108 @@
-<template>abcd</template>
+<script setup lang="ts">
+import FormGroup from '@lib/components/FormGroup.vue'
+import Mapper from '@lib/types/mapper'
+import FmDsgn from '@/types/fmDsgn'
+import { onMounted, reactive, ref } from 'vue'
+import axios from 'axios'
+import { message, notification } from 'ant-design-vue'
+import { useRouter } from 'vue-router'
+
+const form = ref()
+const router = useRouter()
+const mapper = reactive(
+  new Mapper({
+    cstmForm: {
+      label: '选定表单',
+      type: 'Select',
+      options: [],
+      onChange: onFormChange
+    },
+    edtMapper: {
+      label: '表单蓝图',
+      type: 'CodeEditor',
+      lang: 'json'
+    },
+    submit: {
+      label: '',
+      type: 'Button',
+      inner: '保存',
+      htmlType: 'submit',
+      ghost: false,
+      onClick: onFormSubmit
+    }
+  })
+)
+const formState = reactive(new FmDsgn())
+const fullView = ref(false)
+
+onMounted(refresh)
+
+async function refresh() {
+  const resp = await axios.get('/custom_form/mdl/v1/form/s')
+  if (resp.status !== 200) {
+    notification.error({
+      message: '网络异常！',
+      description: resp.statusText
+    })
+    return
+  }
+  const forms = resp.data.data as any[]
+  mapper['cstmForm'].options.splice(
+    0,
+    mapper['cstmForm'].options.length,
+    ...forms.map((itm: any) => ({ label: itm.using, value: itm._id }))
+  )
+}
+async function onFormChange(_form: any, fmId: string) {
+  const resp = await axios.get(`/custom_form/mdl/v1/form/${fmId}`)
+  if (resp.status !== 200) {
+    notification.error({
+      message: '网络异常！',
+      description: resp.statusText
+    })
+    return
+  }
+  formState.edtMapper = JSON.stringify(resp.data.data.schema, null, 2)
+}
+async function onFormSubmit(fmDsgn: FmDsgn) {
+  const resp = await axios.put(`/custom_form/mdl/v1/form/${fmDsgn.cstmForm}`, {
+    schema: JSON.parse(fmDsgn.edtMapper)
+  })
+  if (resp.status !== 200) {
+    notification.error({
+      message: '网络异常！',
+      description: resp.statusText
+    })
+  } else {
+    message.success('添加记录成功！')
+    await refresh()
+  }
+}
+function onToFormView(form: FmDsgn) {
+  if (!form.cstmForm) {
+    notification.error({
+      message: '无目标表单！',
+      description: '请先选择要阅览的表单'
+    })
+    return
+  }
+  router.push(
+    `/func_intf/custom_form/view/${formState.cstmForm}?fullView=${fullView.value ? '1' : ''}`
+  )
+}
+</script>
+
+<template>
+  <div class="w-1/2">
+    <FormGroup ref="form" :mapper="mapper" :copy="FmDsgn.copy" :form="formState" :rules="{}">
+      <template #cstmFormSFX="{ formState }">
+        <a-space>
+          <a-button @click="() => onToFormView(formState)">浏览表单</a-button>
+          <a-form-item-rest>
+            <a-checkbox v-model:checked="fullView">全屏</a-checkbox>
+          </a-form-item-rest>
+        </a-space>
+      </template>
+    </FormGroup>
+  </div>
+</template>

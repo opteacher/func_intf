@@ -9,6 +9,7 @@ import User from '../views/User.vue'
 import Secret from '../views/Secret.vue'
 import Guide from '../views/Guide.vue'
 import ChatGLM from '../views/ChatGLM.vue'
+import MagicPDF from '../views/MagicPDF.vue'
 import ImageOptimize from '../views/ImageOptimize.vue'
 import CustomFormView from '../views/CustomFormView.vue'
 import CustomFormDsgn from '../views/CustomFormDsgn.vue'
@@ -26,6 +27,11 @@ const routes: Array<RouteRecordRaw> = [
     path: '/func_intf/speech_translation',
     name: 'speech_translation',
     component: SpeechTranslate
+  },
+  {
+    path: '/func_intf/magic_pdf',
+    name: 'magic_pdf',
+    component: MagicPDF
   },
   {
     path: '/func_intf/tool_box/encode',
@@ -83,7 +89,7 @@ const routes: Array<RouteRecordRaw> = [
     component: ImageOptimize
   },
   {
-    path: '/func_intf/custom_form/view',
+    path: '/func_intf/custom_form/view/:fid',
     name: 'custom_formView',
     component: CustomFormView
   },

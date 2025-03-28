@@ -5,14 +5,13 @@ import {
   KeyOutlined,
   MessageOutlined,
   PictureOutlined,
-  FormOutlined
+  FormOutlined,
+  FilePdfOutlined
 } from '@ant-design/icons-vue'
 import router from './router'
 import { SelectInfo } from 'ant-design-vue/lib/menu/src/interface'
 import { reactive, ref } from 'vue'
 import { useRoute } from 'vue-router'
-import { onMounted } from 'vue'
-import { onUpdated } from 'vue'
 
 const route = useRoute()
 const sideKeys = reactive<string[]>([])
@@ -53,6 +52,10 @@ function onMuItmSelect(params: SelectInfo) {
             <template #icon><audio-outlined /></template>
             <span>语音转文本</span>
           </a-menu-item>
+          <a-menu-item key="magic_pdf">
+            <template #icon><file-pdf-outlined /></template>
+            <span>PDF转文本</span>
+          </a-menu-item>
           <a-sub-menu key="tool_box">
             <template #icon><inbox-outlined /></template>
             <template #title>网络工具包</template>
@@ -83,7 +86,7 @@ function onMuItmSelect(params: SelectInfo) {
           <a-sub-menu key="custom_form">
             <template #icon><FormOutlined /></template>
             <template #title>自定义表单</template>
-            <a-menu-item key="view">展示表单</a-menu-item>
+            <a-menu-item key="view" disabled>展示表单</a-menu-item>
             <a-menu-item key="design">设计表单</a-menu-item>
           </a-sub-menu>
         </a-menu>
