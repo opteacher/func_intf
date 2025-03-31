@@ -6,14 +6,17 @@ export default class PdfRcd {
   orgFile: string
   pcsFile?: string
   upldTime: Dayjs
-  pcsdTime?: Dayjs
-  status: 'succeed' | 'processing'
+  pcsdTime: Dayjs
+  status: 'succeed' | 'processing' | 'failed'
+  url?: string
   pid?: string
+  src?: string
 
   constructor() {
     this.key = ''
     this.orgFile = ''
     this.upldTime = dayjs(null)
+    this.pcsdTime = dayjs(null)
     this.status = 'processing'
   }
 
@@ -22,9 +25,11 @@ export default class PdfRcd {
     this.orgFile = ''
     this.pcsFile = undefined
     this.upldTime = dayjs(null)
-    this.pcsdTime = undefined
+    this.pcsdTime = dayjs(null)
     this.status = 'processing'
+    this.url = undefined
     this.pid = undefined
+    this.src = undefined
   }
 
   static copy(src: any, tgt?: PdfRcd, force = false) {

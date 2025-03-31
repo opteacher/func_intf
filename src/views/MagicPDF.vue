@@ -1,22 +1,41 @@
 <script setup lang="ts">
-import { onMounted, reactive, ref } from 'vue'
+import { onMounted, reactive, ref, nextTick, watch } from 'vue'
 import {
   UploadOutlined,
   CloseCircleFilled,
   SearchOutlined,
   CheckCircleOutlined,
+  CloseCircleOutlined,
+  CloseOutlined,
   SyncOutlined
 } from '@ant-design/icons-vue'
 import { UploadChangeParam, message, notification } from 'ant-design-vue'
 import axios from 'axios'
 import PdfRcd from '@/types/pdfRcd'
-import { rmvStartsOf } from '@lib/utils'
+import { rmvStartsOf, setProp } from '@lib/utils'
+import markdownit from 'markdown-it'
+import hljs from 'highlight.js'
+import { marked } from 'marked'
 
 interface PdfFile {
   file?: File
   url?: string
 }
 
+const renderer = new marked.Renderer()
+const md = markdownit({
+  highlight: function (str, lang) {
+    if (lang && hljs.getLanguage(lang)) {
+      try {
+        return hljs.highlight(str, { language: lang }).value
+      } catch (__) {
+        console.log()
+      }
+    }
+
+    return '' // use external default escaping
+  }
+})
 const formState = reactive({} as PdfFile)
 const paramMode = ref<'file' | 'url'>('file')
 const upldPrgs = ref(-1)
@@ -24,11 +43,22 @@ const searchText = ref('')
 const records = reactive<PdfRcd[]>([])
 const upldScol = {
   processing: 'processing',
-  succeed: 'success'
+  succeed: 'success',
+  failed: 'error'
 }
 const mdMode = ref<'view' | 'source'>('view')
+const selDoc = reactive<PdfRcd>(new PdfRcd())
+const mdSrc = ref('')
 
 onMounted(refresh)
+watch(
+  () => mdMode.value,
+  () => {
+    if (mdMode.value === 'view' && selDoc.src) {
+      nextTick(() => setProp(mdSrc, 'value', fmtMdSrc(selDoc.src as string)))
+    }
+  }
+)
 
 async function refresh() {
   const resp = await axios.get('/magic_pdf_apis/mdl/v1/record/s')
@@ -41,6 +71,9 @@ async function refresh() {
   }
   const data = resp.data.data as any[]
   records.splice(0, records.length, ...data.map(itm => PdfRcd.copy(itm)).reverse())
+  if (records.some(record => record.status === 'processing')) {
+    setTimeout(refresh, 5000)
+  }
 }
 async function onUploadChange({ file, event }: UploadChangeParam) {
   if (file.status === 'uploading') {
@@ -73,6 +106,50 @@ async function onDocUrlUpload() {
     message.success('上传成功！')
     await refresh()
   }
+}
+function dispRcdTime(record: PdfRcd) {
+  return record.pcsdTime.isAfter(record.upldTime)
+    ? '完成时间：' + record.pcsdTime.format('YY年MM月DD日 HH:mm:ss')
+    : '上传时间：' + record.upldTime.format('YY年MM月DD日 HH:mm:ss')
+}
+async function onRecordClick(record: PdfRcd) {
+  if (!record.url) {
+    notification.warn({
+      message: '无法查询该文档！',
+      description: '查询不到该文档的位置信息'
+    })
+    return
+  }
+  const resp = await axios.get(record.url as string)
+  if (resp.status !== 200) {
+    notification.error({
+      message: '查询文档失败！',
+      description: resp.statusText
+    })
+    return
+  }
+  PdfRcd.copy(record, selDoc)
+  selDoc.src = resp.data
+  setProp(mdSrc, 'value', fmtMdSrc(resp.data))
+}
+function onMdPnlClear() {
+  selDoc.reset()
+  mdSrc.value = ''
+}
+function onMdDocDload() {
+  const link = document.createElement('a')
+  const urls = selDoc.url?.split('/')
+  urls?.pop()
+  link.href = urls?.join('/') + '.zip'
+  link.style.display = 'none'
+  link.click()
+  link.remove()
+}
+function fmtMdSrc(src: string) {
+  return marked(
+    src.replaceAll('(images/', `(magic_pdf_apis/md/v1/${selDoc.pcsFile?.split('/').pop()}/images/`),
+    { renderer }
+  )
 }
 </script>
 
@@ -132,17 +209,22 @@ async function onDocUrlUpload() {
           >
             <template #renderItem="{ item }">
               <a-list-item>
-                <a-list-item-meta
-                  :description="'上传时间：' + item.upldTime.format('YY年MM月DD日 HH:mm:ss')"
-                >
+                <a-list-item-meta :description="dispRcdTime(item)">
                   <template #title>
-                    {{ rmvStartsOf(item.orgFile, '/tmp/') }}&nbsp;
-                    <a-tag :color="upldScol[item.status as 'processing' | 'succeed']">
+                    <a v-if="item.status === 'succeed'" @click="() => onRecordClick(item)">
+                      {{ rmvStartsOf(item.orgFile, '/tmp/') }}
+                    </a>
+                    <template v-else>{{ rmvStartsOf(item.orgFile, '/tmp/') }}</template>
+                    &nbsp;
+                    <a-tag :color="upldScol[item.status as 'processing' | 'succeed' | 'failed']">
                       <template #icon>
                         <check-circle-outlined v-if="item.status === 'succeed'" />
+                        <close-circle-outlined v-else-if="item.status === 'failed'" />
                         <sync-outlined v-else :spin="true" />
-                        {{ item.status === 'succeed' ? '转化成功' : '转化中' }}
                       </template>
+                      <template v-if="item.status === 'succeed'">转化成功</template>
+                      <template v-else-if="item.status === 'failed'">转化失败</template>
+                      <template v-else>转化中</template>
                     </a-tag>
                   </template>
                 </a-list-item-meta>
@@ -155,16 +237,23 @@ async function onDocUrlUpload() {
         </div>
       </div>
     </a-layout-sider>
-    <a-layout-content class="pl-2.5">
-      <div class="flex flex-col">
-        <div class="flex text-right">
-          <a-radio-group class="mr-2" v-model:value="mdMode" button-style="solid">
+    <a-layout-content class="pl-2.5 flex flex-col">
+      <div class="flex justify-between">
+        <a-space>
+          <a-radio-group v-model:value="mdMode" button-style="solid">
             <a-radio-button value="view">浏览</a-radio-button>
             <a-radio-button value="source">源文本</a-radio-button>
           </a-radio-group>
-          <a-button type="primary">下载</a-button>
-        </div>
-        <div class="flex-1" />
+          <a-button v-if="selDoc.url" type="primary" @click="onMdDocDload">下载</a-button>
+        </a-space>
+        <a-button v-if="selDoc.src" type="text" @click="onMdPnlClear">
+          <template #icon><close-outlined /></template>
+        </a-button>
+      </div>
+      <div class="flex-1 pt-3 overflow-auto">
+        <!-- <div v-if="mdMode === 'view'" id="mdPanel" class="relative top-0 left-0 bottom-0 right-0" /> -->
+        <div v-if="mdMode === 'view'" v-html="mdSrc" />
+        <pre v-else>{{ selDoc.src }}</pre>
       </div>
     </a-layout-content>
   </a-layout>
