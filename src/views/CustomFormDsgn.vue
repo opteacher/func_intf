@@ -6,6 +6,7 @@ import { onMounted, reactive, ref } from 'vue'
 import axios from 'axios'
 import { message, notification } from 'ant-design-vue'
 import { useRouter } from 'vue-router'
+import { setProp } from '@lib/utils'
 
 const form = ref()
 const router = useRouter()
@@ -13,8 +14,9 @@ const mapper = reactive(
   new Mapper({
     cstmForm: {
       label: '选定表单',
-      type: 'Select',
+      type: 'SelOrIpt',
       options: [],
+      mode: 'select',
       onChange: onFormChange
     },
     edtMapper: {
@@ -24,6 +26,7 @@ const mapper = reactive(
     },
     submit: {
       label: '',
+      offset: 4,
       type: 'Button',
       inner: '保存',
       htmlType: 'submit',
@@ -54,6 +57,9 @@ async function refresh() {
   )
 }
 async function onFormChange(_form: any, fmId: string) {
+  if (mapper['cstmForm'].mode === 'input') {
+    return
+  }
   const resp = await axios.get(`/custom_form/mdl/v1/form/${fmId}`)
   if (resp.status !== 200) {
     notification.error({
@@ -65,8 +71,21 @@ async function onFormChange(_form: any, fmId: string) {
   formState.edtMapper = JSON.stringify(resp.data.data.schema, null, 2)
 }
 async function onFormSubmit(fmDsgn: FmDsgn) {
-  const resp = await axios.put(`/custom_form/mdl/v1/form/${fmDsgn.cstmForm}`, {
-    schema: JSON.parse(fmDsgn.edtMapper)
+  const req = { url: '', method: 'put' as 'put' | 'post' }
+  switch (mapper['cstmForm'].mode) {
+    case 'select':
+      req.url = `/custom_form/mdl/v1/form/${fmDsgn.cstmForm}`
+      req.method = 'put'
+      break
+    case 'input':
+      req.url = '/custom_form/mdl/v1/form'
+      req.method = 'post'
+      break
+  }
+  console.log(fmDsgn.edtMapper)
+  const resp = await axios[req.method](req.url, {
+    using: req.method === 'post' ? fmDsgn.cstmForm : undefined,
+    schema: typeof fmDsgn.edtMapper === 'string' ? JSON.parse(fmDsgn.edtMapper) : fmDsgn.edtMapper
   })
   if (resp.status !== 200) {
     notification.error({
@@ -78,8 +97,8 @@ async function onFormSubmit(fmDsgn: FmDsgn) {
     await refresh()
   }
 }
-function onToFormView(form: FmDsgn) {
-  if (!form.cstmForm) {
+function onToFormView() {
+  if (!formState.cstmForm) {
     notification.error({
       message: '无目标表单！',
       description: '请先选择要阅览的表单'
@@ -90,14 +109,23 @@ function onToFormView(form: FmDsgn) {
     `/func_intf/custom_form/view/${formState.cstmForm}?fullView=${fullView.value ? '1' : ''}`
   )
 }
+function onFpropUpdate(values: Record<string, any>) {
+  Object.entries(values).map(([k, v]) => setProp(formState, k, v))
+}
 </script>
 
 <template>
   <div class="w-1/2">
-    <FormGroup ref="form" :mapper="mapper" :copy="FmDsgn.copy" :form="formState" :rules="{}">
-      <template #cstmFormSFX="{ formState }">
+    <FormGroup
+      ref="form"
+      :mapper="mapper"
+      :form="formState"
+      :rules="{}"
+      @update:fprop="onFpropUpdate"
+    >
+      <template #cstmFormSFX>
         <a-space>
-          <a-button @click="() => onToFormView(formState)">浏览表单</a-button>
+          <a-button @click="onToFormView">浏览表单</a-button>
           <a-form-item-rest>
             <a-checkbox v-model:checked="fullView">全屏</a-checkbox>
           </a-form-item-rest>

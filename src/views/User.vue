@@ -31,7 +31,7 @@ const mapper = new Mapper({
   creation_time: {
     label: '创建时间',
     type: 'DateTime',
-    display: [Cond.copy({ key: 'key', cmp: '!=', val: '' })]
+    display: [new Cond({ key: 'key', cmp: '!=', val: '' })]
   }
 })
 

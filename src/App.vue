@@ -48,7 +48,7 @@ function onMuItmSelect(params: SelectInfo) {
           theme="dark"
           @select="onMuItmSelect"
         >
-          <a-menu-item key="speech_translation">
+          <a-menu-item key="audio_words">
             <template #icon><audio-outlined /></template>
             <span>语音转文本</span>
           </a-menu-item>

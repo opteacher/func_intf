@@ -15,8 +15,8 @@ const plcMapr = new Mapper({
     label: '名称',
     type: 'Input',
     disabled: [
-      Cond.copy({ key: 'key', cmp: '!=', val: '' }),
-      Cond.copy({ key: 'key', cmp: '!=', val: 'undefined' })
+      new Cond({ key: 'key', cmp: '!=', val: '' }),
+      new Cond({ key: 'key', cmp: '!=', val: 'undefined' })
     ],
     rules: [{ required: true, message: '必须输入名称！' }]
   },

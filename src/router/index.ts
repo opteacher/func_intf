@@ -1,5 +1,5 @@
 import { createRouter, RouteRecordRaw, createWebHashHistory } from 'vue-router'
-import SpeechTranslate from '../views/SpeechTranslate.vue'
+import Audio2Words from '../views/Audio2Words.vue'
 import Encode from '../views/Encode.vue'
 import Crypto from '../views/Crypto.vue'
 import Random from '../views/Random.vue'
@@ -17,16 +17,16 @@ import CustomFormDsgn from '../views/CustomFormDsgn.vue'
 const routes: Array<RouteRecordRaw> = [
   {
     path: '/',
-    redirect: '/func_intf/speech_translation'
+    redirect: '/func_intf/audio_words'
   },
   {
     path: '/func_intf',
-    redirect: '/func_intf/speech_translation'
+    redirect: '/func_intf/audio_words'
   },
   {
-    path: '/func_intf/speech_translation',
-    name: 'speech_translation',
-    component: SpeechTranslate
+    path: '/func_intf/audio_words',
+    name: 'audio_words',
+    component: Audio2Words
   },
   {
     path: '/func_intf/magic_pdf',

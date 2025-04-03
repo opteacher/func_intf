@@ -36,8 +36,8 @@ const mapper = new Mapper({
     label: '所在密钥',
     type: 'Input',
     disabled: [
-      Cond.copy({ key: 'key', cmp: '!=', val: '' }),
-      Cond.copy({ key: 'key', cmp: '!=', val: 'undefined' })
+      new Cond({ key: 'key', cmp: '!=', val: '' }),
+      new Cond({ key: 'key', cmp: '!=', val: 'undefined' })
     ]
   },
   skey: {

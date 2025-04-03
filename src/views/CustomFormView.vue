@@ -7,11 +7,11 @@ import axios from 'axios'
 import { message, notification } from 'ant-design-vue'
 import { useRoute } from 'vue-router'
 import { compoDftVal } from '@lib/types'
-import { pickOrIgnore } from '@lib/utils'
+import { gnlCpy, pickOrIgnore } from '@lib/utils'
 
 const form = ref()
 const route = useRoute()
-const mapper = reactive(new Mapper())
+const mapper = ref(new Mapper())
 const formState = reactive(new Rcrd())
 const rules = reactive({})
 
@@ -31,12 +31,13 @@ onMounted(async () => {
     })
     return
   }
-  Mapper.copy(resp.data.data.schema, mapper)
-  mapper['submit'] = ButtonMapper.copy({
+  mapper.value = new Mapper(resp.data.data.schema)
+  mapper.value['submit'] = gnlCpy(ButtonMapper, {
     type: 'Button',
     label: '',
     inner: '提交',
     htmlType: 'submit',
+    offset: 4,
     ghost: false,
     onClick: onSubmit
   })
@@ -67,19 +68,13 @@ async function onSubmit(data: any) {
 }
 function genEmptyForm() {
   return Object.fromEntries(
-    Object.entries(mapper).map(([key, val]) => [key, compoDftVal(val.type)])
+    Object.entries(mapper.value).map(([key, val]) => [key, compoDftVal(val.type)])
   )
 }
 </script>
 
 <template>
   <div class="w-1/2">
-    <FormGroup
-      ref="form"
-      :mapper="mapper"
-      :copy="genEmptyForm"
-      :form="formState.data"
-      :rules="rules"
-    />
+    <FormGroup ref="form" :mapper="mapper" :form="formState.data" :rules="rules" />
   </div>
 </template>

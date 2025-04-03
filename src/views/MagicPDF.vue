@@ -15,14 +15,12 @@ import PdfRcd from '@/types/pdfRcd'
 import { rmvStartsOf, setProp } from '@lib/utils'
 import markdownit from 'markdown-it'
 import hljs from 'highlight.js'
-import { marked } from 'marked'
 
 interface PdfFile {
   file?: File
   url?: string
 }
 
-const renderer = new marked.Renderer()
 const md = markdownit({
   highlight: function (str, lang) {
     if (lang && hljs.getLanguage(lang)) {
@@ -146,9 +144,8 @@ function onMdDocDload() {
   link.remove()
 }
 function fmtMdSrc(src: string) {
-  return marked(
-    src.replaceAll('(images/', `(magic_pdf_apis/md/v1/${selDoc.pcsFile?.split('/').pop()}/images/`),
-    { renderer }
+  return md.render(
+    src.replaceAll('(images/', `(magic_pdf_apis/md/v1/${selDoc.pcsFile?.split('/').pop()}/images/`)
   )
 }
 </script>
