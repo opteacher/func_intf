@@ -6,12 +6,12 @@ export default class Rcrd {
 
   constructor() {
     this.key = ''
-    this.data = null
+    this.data = {}
   }
 
   reset() {
     this.key = ''
-    this.data = null
+    this.data = {}
   }
 
   static copy(src: any, tgt?: Rcrd, force = false) {

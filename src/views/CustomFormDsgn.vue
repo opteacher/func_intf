@@ -82,7 +82,6 @@ async function onFormSubmit(fmDsgn: FmDsgn) {
       req.method = 'post'
       break
   }
-  console.log(fmDsgn.edtMapper)
   const resp = await axios[req.method](req.url, {
     using: req.method === 'post' ? fmDsgn.cstmForm : undefined,
     schema: typeof fmDsgn.edtMapper === 'string' ? JSON.parse(fmDsgn.edtMapper) : fmDsgn.edtMapper

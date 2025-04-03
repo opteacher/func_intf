@@ -7,7 +7,7 @@ import axios from 'axios'
 import { message, notification } from 'ant-design-vue'
 import { useRoute } from 'vue-router'
 import { compoDftVal } from '@lib/types'
-import { gnlCpy, pickOrIgnore } from '@lib/utils'
+import { gnlCpy, pickOrIgnore, setProp } from '@lib/utils'
 
 const form = ref()
 const route = useRoute()
@@ -71,10 +71,19 @@ function genEmptyForm() {
     Object.entries(mapper.value).map(([key, val]) => [key, compoDftVal(val.type)])
   )
 }
+function onFpropUpdate(values: Record<string, any>) {
+  Object.entries(values).map(([k, v]) => setProp(formState.data, k, v))
+}
 </script>
 
 <template>
   <div class="w-1/2">
-    <FormGroup ref="form" :mapper="mapper" :form="formState.data" :rules="rules" />
+    <FormGroup
+      ref="form"
+      :mapper="mapper"
+      :form="formState.data"
+      :rules="rules"
+      @update:fprop="onFpropUpdate"
+    />
   </div>
 </template>
