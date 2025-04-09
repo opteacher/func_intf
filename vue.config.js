@@ -13,7 +13,7 @@ module.exports = defineConfig({
         ws: true,
         changeOrigin: true
       },
-      '/audio_words/api': {
+      '/audio_words/(api|mdl)': {
         target: 'http://192.168.1.11:4009/',
         ws: true,
         changeOrigin: true
