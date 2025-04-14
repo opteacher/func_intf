@@ -2,12 +2,14 @@ export default class A2wJob {
   key: string
   name: string
   url: string
+  content: string
   status: 'succeed' | 'failed' | 'processing'
 
   constructor() {
     this.key = ''
     this.name = ''
     this.url = ''
+    this.content = ''
     this.status = 'processing'
   }
 
@@ -15,6 +17,7 @@ export default class A2wJob {
     this.key = ''
     this.name = ''
     this.url = ''
+    this.content = ''
     this.status = 'processing'
   }
 }

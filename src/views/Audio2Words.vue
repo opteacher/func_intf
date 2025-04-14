@@ -1,38 +1,48 @@
 <template>
   <div class="h-full flex flex-col space-y-4">
-    <a-space>
-      <a-radio-group v-model:value="settings.tech" button-style="solid">
-        <a-radio-button v-for="opn in techOpns" :key="opn.value" :value="opn.value">
-          {{ opn.label }}
-        </a-radio-button>
-      </a-radio-group>
-      <a-select
-        class="w-48"
-        placeholder="选择识别精度"
-        :options="mdlOpns"
-        v-model:value="settings.model"
-      />
-      <a-radio-group v-model:value="settings.language" button-style="solid">
-        <a-radio-button v-for="opn in langOpns" :key="opn.value" :value="opn.value">
-          {{ opn.label }}
-        </a-radio-button>
-      </a-radio-group>
-      <a-upload
-        name="file"
-        :data="settings"
-        v-model:file-list="files"
-        :action="`${isProd ? 'http://38.152.2.152:9095' : ''}/audio_words/api/v1/audio2words`"
-        :showUploadList="false"
-        @change="onChange"
-      >
-        <a-button :loading="loading" type="primary">
-          <template v-if="!loading" #icon>
-            <upload-outlined />
-          </template>
-          点击上传音频文件
+    <div class="flex justify-between">
+      <a-space>
+        <a-radio-group v-model:value="settings.tech" button-style="solid">
+          <a-radio-button v-for="opn in techOpns" :key="opn.value" :value="opn.value">
+            {{ opn.label }}
+          </a-radio-button>
+        </a-radio-group>
+        <a-select
+          class="w-48"
+          placeholder="选择识别精度"
+          :options="mdlOpns"
+          v-model:value="settings.model"
+        />
+        <a-radio-group v-model:value="settings.language" button-style="solid">
+          <a-radio-button v-for="opn in langOpns" :key="opn.value" :value="opn.value">
+            {{ opn.label }}
+          </a-radio-button>
+        </a-radio-group>
+        <a-upload
+          name="file"
+          :data="settings"
+          v-model:file-list="files"
+          :action="`${isProd ? 'http://38.152.2.152:9095' : ''}/audio_words/api/v1/audio2words`"
+          :showUploadList="false"
+          @change="onChange"
+        >
+          <a-button :loading="loading" type="primary">
+            <template v-if="!loading" #icon>
+              <upload-outlined />
+            </template>
+            点击上传音频文件
+          </a-button>
+        </a-upload>
+      </a-space>
+      <a-space v-if="selA2wJob">
+        <a-button @click="scrollToBtm">
+          <template #icon><vertical-align-bottom-outlined /></template>
         </a-button>
-      </a-upload>
-    </a-space>
+        <a-button danger @click="onA2wJobClear">
+          <template #icon><close-outlined /></template>
+        </a-button>
+      </a-space>
+    </div>
     <a-layout class="flex-1">
       <a-layout-sider class="pr-2" width="40%" theme="light">
         <a-list item-layout="horizontal" :data-source="a2wJobs">
@@ -43,9 +53,9 @@
                 :class="{
                   'border-solid border-primary': selA2wJob && selA2wJob?.key === job.key
                 }"
-                :hoverable="job.status === 'succeed'"
+                :hoverable="!selA2wJob || selA2wJob?.key !== job.key"
                 size="small"
-                @click="() => (selA2wJob = job)"
+                @click="() => onA2wJobSelect(job)"
               >
                 <div class="flex justify-between">
                   <div>
@@ -68,29 +78,34 @@
           </template>
         </a-list>
       </a-layout-sider>
-      <a-layout-content class="p-2">
-        <pre>{{ content }}</pre>
+      <a-layout-content class="p-2 overflow-auto" ref="contentRef">
+        <pre class="mb-0">{{ selA2wJob ? selA2wJob.content + content : '' }}</pre>
+        <minus-outlined v-if="selA2wJob && selA2wJob.status === 'processing'" :spin="true" />
       </a-layout-content>
     </a-layout>
   </div>
 </template>
 
 <script lang="ts" setup>
-import { notification, UploadChangeParam } from 'ant-design-vue'
+import { message, notification, UploadChangeParam } from 'ant-design-vue'
 import { reactive, ref } from 'vue'
 import {
   UploadOutlined,
   SyncOutlined,
   CheckCircleOutlined,
   CloseCircleOutlined,
-  DeleteOutlined
+  DeleteOutlined,
+  CloseOutlined,
+  MinusOutlined,
+  VerticalAlignBottomOutlined
 } from '@ant-design/icons-vue'
 import { isProd } from '../api'
 import axios from 'axios'
 import { onMounted } from 'vue'
-import { gnlCpy, intervalCheck, obj2opns } from '@/utils'
+import { gnlCpy, intervalCheck, obj2opns, setProp } from '@/utils'
 import A2wJob from '@/types/a2wJob'
 import Paho, { Message } from 'paho-mqtt'
+import { nextTick } from 'vue'
 
 const files = ref([])
 const loading = ref(false)
@@ -126,6 +141,8 @@ const status = {
   failed: { text: '转化失败', color: 'error' }
 }
 const selA2wJob = ref<A2wJob | null>(null)
+const contentRef = ref<{ $el: HTMLElement } | null>(null)
+const mqttCli = ref<Paho.Client | null>(null)
 
 onMounted(refresh)
 
@@ -151,6 +168,7 @@ function onChange(info: UploadChangeParam) {
         chkFun: () => refresh().then(() => a2wJobs.every(job => job.status !== 'processing')),
         interval: 5000
       })
+      selA2wJob.value = gnlCpy(A2wJob, info.file.response.result)
       startListenMQTT()
       break
     default:
@@ -161,20 +179,52 @@ function onJobDelete(job: A2wJob) {
   return axios.delete(`/audio_words/mdl/v1/a2wJob/${job.key}`).then(refresh)
 }
 function startListenMQTT() {
-  const client = new Paho.Client('192.168.1.11', 8083, '/mqtt')
-  client.onConnectionLost = err => {
-    notification.error({
-      message: 'MQTT连接失败',
-      description: err.errorMessage
+  content.value = ''
+  if (!mqttCli.value) {
+    mqttCli.value = new Paho.Client('192.168.1.11', 8083, '/mqtt')
+  }
+  mqttCli.value.onConnectionLost = err => {
+    message.warning('MQTT连接断开' + err.errorMessage)
+  }
+  mqttCli.value.onMessageArrived = (message: Message) => {
+    content.value += message.payloadString
+    nextTick(scrollToBtm)
+  }
+  if (!mqttCli.value.isConnected()) {
+    mqttCli.value.connect({
+      onSuccess: () => {
+        mqttCli.value?.subscribe('audio_words')
+      },
+      onFailure: err => {
+        notification.error({
+          message: 'MQTT连接失败',
+          description: err.errorMessage
+        })
+      }
     })
   }
-  client.onMessageArrived = (message: Message) => {
-    content.value += message.payloadString
+}
+function stopListenMQTT() {
+  if (mqttCli.value && mqttCli.value.isConnected()) {
+    mqttCli.value.disconnect()
   }
-  client.connect({
-    onSuccess: () => {
-      client.subscribe('audio_words')
-    }
-  })
+}
+function onA2wJobClear() {
+  selA2wJob.value = null
+  content.value = ''
+  stopListenMQTT()
+}
+async function onA2wJobSelect(job: A2wJob) {
+  await refresh()
+  selA2wJob.value = a2wJobs.find(j => j.key === job.key) || null
+  if (job.status === 'processing') {
+    startListenMQTT()
+    await nextTick(scrollToBtm)
+  }
+}
+function scrollToBtm() {
+  if (contentRef.value) {
+    contentRef.value.$el.scrollTop = contentRef.value?.$el.scrollHeight
+  }
 }
 </script>
