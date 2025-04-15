@@ -22,7 +22,7 @@
           name="file"
           :data="settings"
           v-model:file-list="files"
-          :action="`${isProd ? 'http://38.152.2.152:9095' : ''}/audio_words/api/v1/audio2words`"
+          :action="`${ado2WdsURL}/audio_words/api/v1/audio2words`"
           :showUploadList="false"
           @change="onChange"
         >
@@ -99,10 +99,9 @@ import {
   MinusOutlined,
   VerticalAlignBottomOutlined
 } from '@ant-design/icons-vue'
-import { isProd } from '../api'
-import axios from 'axios'
+import api, { ado2WdsURL, mqttHost } from '../api'
 import { onMounted } from 'vue'
-import { gnlCpy, intervalCheck, obj2opns, setProp } from '@/utils'
+import { gnlCpy, intervalCheck, obj2opns } from '@/utils'
 import A2wJob from '@/types/a2wJob'
 import Paho, { Message } from 'paho-mqtt'
 import { nextTick } from 'vue'
@@ -147,15 +146,7 @@ const mqttCli = ref<Paho.Client | null>(null)
 onMounted(refresh)
 
 async function refresh() {
-  const resp = await axios.get('/audio_words/mdl/v1/a2wJob/s')
-  if (resp.status !== 200) {
-    notification.error({
-      message: '网络请求失败',
-      description: resp.statusText
-    })
-    return
-  }
-  a2wJobs.splice(0, a2wJobs.length, ...resp.data.data.map((item: any) => gnlCpy(A2wJob, item)))
+  a2wJobs.splice(0, a2wJobs.length, ...(await api.audio2Words.a2wJob.all()))
 }
 function onChange(info: UploadChangeParam) {
   switch (info.file.status) {
@@ -176,12 +167,12 @@ function onChange(info: UploadChangeParam) {
   }
 }
 function onJobDelete(job: A2wJob) {
-  return axios.delete(`/audio_words/mdl/v1/a2wJob/${job.key}`).then(refresh)
+  return api.audio2Words.a2wJob.remove(job.key).then(refresh)
 }
 function startListenMQTT() {
   content.value = ''
   if (!mqttCli.value) {
-    mqttCli.value = new Paho.Client('192.168.1.11', 8083, '/mqtt')
+    mqttCli.value = new Paho.Client(mqttHost, 8083, '/mqtt')
   }
   mqttCli.value.onConnectionLost = err => {
     message.warning('MQTT连接断开' + err.errorMessage)

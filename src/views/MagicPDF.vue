@@ -10,7 +10,7 @@ import {
   SyncOutlined
 } from '@ant-design/icons-vue'
 import { UploadChangeParam, message, notification } from 'ant-design-vue'
-import axios from 'axios'
+import api from '@/api'
 import PdfRcd from '@/types/pdfRcd'
 import { rmvStartsOf, setProp } from '@lib/utils'
 import markdownit from 'markdown-it'
@@ -59,16 +59,8 @@ watch(
 )
 
 async function refresh() {
-  const resp = await axios.get('/magic_pdf_apis/mdl/v1/record/s')
-  if (resp.status !== 200) {
-    notification.error({
-      message: '网络异常！',
-      description: resp.statusText
-    })
-    return
-  }
-  const data = resp.data.data as any[]
-  records.splice(0, records.length, ...data.map(itm => PdfRcd.copy(itm)).reverse())
+  const data = await api.magicPdf.record.all()
+  records.splice(0, records.length, ...data.reverse())
   if (records.some(record => record.status === 'processing')) {
     setTimeout(refresh, 5000)
   }
@@ -82,28 +74,12 @@ async function onUploadChange({ file, event }: UploadChangeParam) {
   }
 }
 async function onRecordRmv(record: PdfRcd) {
-  const resp = await axios.delete(`/magic_pdf_apis/mdl/v1/record/${record.key}`)
-  if (resp.status !== 200) {
-    notification.error({
-      message: '删除失败！',
-      description: resp.statusText
-    })
-  } else {
-    message.success('删除成功！')
-    await refresh()
-  }
+  await api.magicPdf.record.remove(record.key)
+  await refresh()
 }
 async function onDocUrlUpload() {
-  const resp = await axios.post('/magic_pdf_apis/api/v1/pdf/upload', formState)
-  if (resp.status !== 200) {
-    notification.error({
-      message: '上传失败！',
-      description: resp.statusText
-    })
-  } else {
-    message.success('上传成功！')
-    await refresh()
-  }
+  await api.magicPdf.pdf.upload(formState)
+  await refresh()
 }
 function dispRcdTime(record: PdfRcd) {
   return record.pcsdTime.isAfter(record.upldTime)
@@ -118,17 +94,10 @@ async function onRecordClick(record: PdfRcd) {
     })
     return
   }
-  const resp = await axios.get(record.url as string)
-  if (resp.status !== 200) {
-    notification.error({
-      message: '查询文档失败！',
-      description: resp.statusText
-    })
-    return
-  }
+  const data = await api.magicPdf.pdf.get(record.url as string)
   PdfRcd.copy(record, selDoc)
-  selDoc.src = resp.data
-  setProp(mdSrc, 'value', fmtMdSrc(resp.data))
+  selDoc.src = data
+  setProp(mdSrc, 'value', fmtMdSrc(data))
 }
 function onMdPnlClear() {
   selDoc.reset()

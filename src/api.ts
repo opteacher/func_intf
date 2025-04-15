@@ -1,32 +1,62 @@
 import Role from './types/role'
 import Policy, { PlcPath } from './types/policy'
-import { RequestOptions, reqAll, reqDelete, reqGet, reqPost, reqPut } from './utils'
+import {
+  RequestOptions,
+  gnlCpy,
+  makeRequest,
+  reqAll,
+  reqDelete,
+  reqGet,
+  reqPost,
+  reqPut,
+  setProp
+} from './utils'
 import User from './types/user'
 import KV from './types/kv'
 import Login from './types/login'
 import { message } from 'ant-design-vue'
 import { v4 } from 'uuid'
 import ZSK, { LibType } from './types/zsk'
-import { AxiosRequestConfig, AxiosRequestHeaders } from 'axios'
+import axios, { AxiosRequestConfig, AxiosRequestHeaders } from 'axios'
+import A2wJob from './types/a2wJob'
+import PdfRcd from './types/pdfRcd'
 
 export const isProd = process.env.NODE_ENV === 'production'
-export const toolBaseURL = 'http://38.152.2.152:3121'
+const gpusHost = '38.155.60.235'
+const appsHost = '38.152.2.152'
+const testHost = '192.168.1.11'
+
+export const toolsBoxURL = isProd ? `http://${appsHost}:3121` : undefined
+export const secretMgrURL = isProd ? `http://${appsHost}:3143` : undefined
+export const chatGlmURL = isProd ? `http://${appsHost}:8441` : undefined
+export const mqttHost = isProd ? appsHost : testHost
+export const ado2WdsURL = isProd ? `http://${gpusHost}:5111` : ''
+export const mgcPdfURL = isProd ? `http://${gpusHost}:3290` : ''
+
 const toolOpns = {
   project: 'tools_box',
-  type: 'api'
+  type: 'api',
+  axiosConfig: { baseURL: toolsBoxURL }
 } as RequestOptions
-export const secretBaseURL = 'http://38.152.2.152:3143'
 const secretOpns = {
   project: 'secret_manager',
   type: 'api',
-  ...(isProd ? { axiosConfig: { baseURL: secretBaseURL } } : {})
-} as RequestOptions
-export const chatBaseURL = 'http://38.152.2.152:8441'
+  axiosConfig: { baseURL: secretMgrURL }
+}
 const chatGlmOpns = {
   project: 'chat_glm_config',
-  ...(isProd ? { axiosConfig: { baseURL: chatBaseURL } } : {})
+  axiosConfig: { baseURL: chatGlmURL }
 } as RequestOptions
 const chatGlmApiOpns = { type: 'api', ...chatGlmOpns } as RequestOptions
+const ado2WdsOpns = {
+  project: 'audio_words',
+  copy: (src: any) => gnlCpy(A2wJob, src),
+  axiosConfig: { baseURL: ado2WdsURL }
+} as RequestOptions
+const mgcPdfOpns = {
+  project: 'magic_pdf_apis',
+  axiosConfig: { baseURL: mgcPdfURL }
+} as RequestOptions
 
 const bindLgnTkn = (): RequestOptions => {
   ;(secretOpns.axiosConfig as AxiosRequestConfig<any>).headers = {
@@ -37,27 +67,20 @@ const bindLgnTkn = (): RequestOptions => {
 
 const expIns = {
   toolBox: {
-    encode: (text: string, encType: string, extra?: any) =>
-      reqGet('encode', undefined, {
-        ...toolOpns,
-        axiosConfig: {
-          baseURL: isProd ? toolBaseURL : '',
-          params: Object.assign(extra || {}, { text, code: encType })
-        }
-      }),
+    encode: (text: string, encType: string, extra = {}) =>
+      reqGet(
+        'encode',
+        undefined,
+        setProp(toolOpns, 'axiosConfig.params', { ...extra, text, code: encType })
+      ),
     crypto: (crypt: 'encrypt' | 'decrypt', alg: string, data: string[], secret?: string) =>
-      reqGet('crypto', crypt, {
-        ...toolOpns,
-        axiosConfig: { baseURL: isProd ? toolBaseURL : '', params: { data, alg, secret } }
-      }),
-    random: (randType: 'number' | 'uuid' | 'string' | 'name', params?: any) =>
-      reqGet('random', undefined, {
-        ...toolOpns,
-        axiosConfig: {
-          baseURL: isProd ? toolBaseURL : '',
-          params: Object.assign(params || {}, { mode: randType })
-        }
-      })
+      reqGet('crypto', crypt, setProp(toolOpns, 'axiosConfig.params', { data, alg, secret })),
+    random: (randType: 'number' | 'uuid' | 'string' | 'name', params = {}) =>
+      reqGet(
+        'random',
+        undefined,
+        setProp(toolOpns, 'axiosConfig.params', { ...params, mode: randType })
+      )
   },
   secret: {
     policy: {
@@ -165,7 +188,7 @@ const expIns = {
       remove: (zsk: ZSK) => reqDelete('zsk', zsk.key, chatGlmApiOpns),
       viewFile: async (zsk: ZSK, fIdx: number) => {
         const path = await reqGet('zsk', `${zsk.key}/file/${fIdx}/view`, chatGlmApiOpns)
-        window.open((isProd ? chatBaseURL : 'http://192.168.1.11') + path, '_blank')
+        window.open(chatGlmURL + path, '_blank')
       },
       reload: (zsk: ZSK) =>
         reqPost(`zsk/${zsk.ltype}/reload`, undefined, chatGlmApiOpns).then(() => {
@@ -178,6 +201,35 @@ const expIns = {
             notShow: true
           }
         })
+    }
+  },
+  audio2Words: {
+    a2wJob: {
+      all: () => reqAll('a2wJob', ado2WdsOpns),
+      remove: (jobId: string) =>
+        reqDelete('a2wJob', jobId, {
+          ...ado2WdsOpns,
+          messages: { succeed: '删除成功！', failed: '删除失败！' }
+        })
+    }
+  },
+  magicPdf: {
+    record: {
+      all: () => reqAll('record', { ...mgcPdfOpns, copy: (src: any) => gnlCpy(PdfRcd, src) }),
+      remove: (rcdId: string) =>
+        reqDelete('record', rcdId, {
+          ...mgcPdfOpns,
+          messages: { succeed: '删除成功！', failed: '删除失败！' }
+        })
+    },
+    pdf: {
+      upload: (form: any) =>
+        reqPost('pdf', form, {
+          ...mgcPdfOpns,
+          action: 'upload',
+          messages: { succeed: '上传成功！', failed: '上传失败！' }
+        }),
+      get: (url: string) => makeRequest(axios.get(url), { messages: { failed: '查询文档失败！' } })
     }
   }
 }
