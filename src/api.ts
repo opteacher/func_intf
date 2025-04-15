@@ -205,7 +205,7 @@ const expIns = {
   },
   audio2Words: {
     a2wJob: {
-      all: () => reqAll('a2wJob', ado2WdsOpns),
+      all: () => reqAll('a2wJob', { ...ado2WdsOpns, messages: { notShow: true } }),
       remove: (jobId: string) =>
         reqDelete('a2wJob', jobId, {
           ...ado2WdsOpns,
@@ -215,7 +215,12 @@ const expIns = {
   },
   magicPdf: {
     record: {
-      all: () => reqAll('record', { ...mgcPdfOpns, copy: (src: any) => gnlCpy(PdfRcd, src) }),
+      all: () =>
+        reqAll('record', {
+          ...mgcPdfOpns,
+          messages: { notShow: true },
+          copy: (src: any) => gnlCpy(PdfRcd, src)
+        }),
       remove: (rcdId: string) =>
         reqDelete('record', rcdId, {
           ...mgcPdfOpns,
@@ -229,7 +234,10 @@ const expIns = {
           action: 'upload',
           messages: { succeed: '上传成功！', failed: '上传失败！' }
         }),
-      get: (url: string) => makeRequest(axios.get(url), { messages: { failed: '查询文档失败！' } })
+      get: (url: string) =>
+        makeRequest(axios.get(url, { baseURL: mgcPdfURL }), {
+          messages: { failed: '查询文档失败！' }
+        })
     }
   }
 }

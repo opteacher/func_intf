@@ -10,7 +10,7 @@ import {
   SyncOutlined
 } from '@ant-design/icons-vue'
 import { UploadChangeParam, message, notification } from 'ant-design-vue'
-import api from '@/api'
+import api, { mgcPdfURL } from '@/api'
 import PdfRcd from '@/types/pdfRcd'
 import { rmvStartsOf, setProp } from '@lib/utils'
 import markdownit from 'markdown-it'
@@ -134,7 +134,7 @@ function fmtMdSrc(src: string) {
               class="flex-1"
               v-model:value="formState.file"
               name="file"
-              action="/magic_pdf_apis/api/v1/pdf/upload"
+              :action="mgcPdfURL + '/magic_pdf_apis/api/v1/pdf/upload'"
               :show-upload-list="false"
               @change="onUploadChange"
             >

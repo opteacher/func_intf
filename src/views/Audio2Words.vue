@@ -147,6 +147,9 @@ onMounted(refresh)
 
 async function refresh() {
   a2wJobs.splice(0, a2wJobs.length, ...(await api.audio2Words.a2wJob.all()))
+  if (selA2wJob.value) {
+    updateSelA2wJob()
+  }
 }
 function onChange(info: UploadChangeParam) {
   switch (info.file.status) {
@@ -167,6 +170,7 @@ function onChange(info: UploadChangeParam) {
   }
 }
 function onJobDelete(job: A2wJob) {
+  onA2wJobClear()
   return api.audio2Words.a2wJob.remove(job.key).then(refresh)
 }
 function startListenMQTT() {
@@ -217,5 +221,8 @@ function scrollToBtm() {
   if (contentRef.value) {
     contentRef.value.$el.scrollTop = contentRef.value?.$el.scrollHeight
   }
+}
+function updateSelA2wJob() {
+  selA2wJob.value = a2wJobs.find(job => selA2wJob.value?.key === job.key) || null
 }
 </script>
