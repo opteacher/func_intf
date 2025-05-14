@@ -11,8 +11,9 @@ import Guide from '../views/Guide.vue'
 import ChatGLM from '../views/ChatGLM.vue'
 import MagicPDF from '../views/MagicPDF.vue'
 import ImageOptimize from '../views/ImageOptimize.vue'
-import CustomFormView from '../views/CustomFormView.vue'
-import CustomFormDsgn from '../views/CustomFormDsgn.vue'
+import CstmFormView from '../views/CstmFormView.vue'
+import CstmFormDsgn from '../views/CstmFormDsgn.vue'
+import CstmFormTable from '../views/CstmFormTable.vue'
 
 const routes: Array<RouteRecordRaw> = [
   {
@@ -91,12 +92,17 @@ const routes: Array<RouteRecordRaw> = [
   {
     path: '/func_intf/custom_form/view/:fid',
     name: 'custom_formView',
-    component: CustomFormView
+    component: CstmFormView
   },
   {
     path: '/func_intf/custom_form/design',
     name: 'custom_formDsgn',
-    component: CustomFormDsgn
+    component: CstmFormDsgn
+  },
+  {
+    path: '/func_intf/custom_form/table/:fid',
+    name: 'custom_formTable',
+    component: CstmFormTable
   }
 ]
 

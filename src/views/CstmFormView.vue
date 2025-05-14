@@ -6,7 +6,7 @@ import { onMounted, reactive, ref } from 'vue'
 import axios from 'axios'
 import { message, notification } from 'ant-design-vue'
 import { useRoute } from 'vue-router'
-import { compoDftVal } from '@lib/types'
+import { fieldDftVal } from '@lib/types/field'
 import { gnlCpy, pickOrIgnore, setProp } from '@lib/utils'
 
 const form = ref()
@@ -68,7 +68,7 @@ async function onSubmit(data: any) {
 }
 function genEmptyForm() {
   return Object.fromEntries(
-    Object.entries(mapper.value).map(([key, val]) => [key, compoDftVal(val.type)])
+    Object.entries(mapper.value).map(([key, val]) => [key, fieldDftVal(val.type)])
   )
 }
 function onFpropUpdate(values: Record<string, any>) {

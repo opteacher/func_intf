@@ -86,8 +86,9 @@ function onMuItmSelect(params: SelectInfo) {
           <a-sub-menu key="custom_form">
             <template #icon><FormOutlined /></template>
             <template #title>自定义表单</template>
-            <a-menu-item key="view" disabled>展示表单</a-menu-item>
             <a-menu-item key="design">设计表单</a-menu-item>
+            <a-menu-item key="view" disabled>展示表单</a-menu-item>
+            <a-menu-item key="table" disabled>自定义表</a-menu-item>
           </a-sub-menu>
         </a-menu>
       </a-layout-sider>

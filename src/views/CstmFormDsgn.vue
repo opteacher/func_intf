@@ -24,6 +24,11 @@ const mapper = reactive(
       type: 'CodeEditor',
       lang: 'json'
     },
+    sbtToRes: {
+      label: '跳转结果',
+      type: 'Switch',
+      placeholder: '提交表单后是否跳转到结果表'
+    },
     submit: {
       label: '',
       offset: 4,
@@ -122,9 +127,9 @@ function onFpropUpdate(values: Record<string, any>) {
       :rules="{}"
       @update:fprop="onFpropUpdate"
     >
-      <template #cstmFormSFX>
+      <template #cstmFormSFX="{ formState }">
         <a-space>
-          <a-button @click="onToFormView">浏览表单</a-button>
+          <a-button :disabled="formState.cstmForm" @click="onToFormView">浏览表单</a-button>
           <a-form-item-rest>
             <a-checkbox v-model:checked="fullView">全屏</a-checkbox>
           </a-form-item-rest>
