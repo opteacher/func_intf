@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { CopyOutlined } from '@ant-design/icons-vue'
 import { message } from 'ant-design-vue'
-import { ref, defineProps } from 'vue'
+import { ref } from 'vue'
 import AButton from 'ant-design-vue/lib/button'
 
 const props = defineProps({

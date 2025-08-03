@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { EyeInvisibleOutlined, EyeOutlined, CopyOutlined } from '@ant-design/icons-vue'
 import { message } from 'ant-design-vue'
-import { ref, defineProps } from 'vue'
+import { ref } from 'vue'
 
 const props = defineProps({
   kv: { type: Object, required: true },

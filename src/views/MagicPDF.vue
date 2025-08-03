@@ -9,7 +9,7 @@ import {
   CloseOutlined,
   SyncOutlined
 } from '@ant-design/icons-vue'
-import { UploadChangeParam, message, notification } from 'ant-design-vue'
+import { type UploadChangeParam, notification } from 'ant-design-vue'
 import api, { mgcPdfURL } from '@/api'
 import PdfRcd from '@/types/pdfRcd'
 import { rmvStartsOf, setProp } from '@lib/utils'

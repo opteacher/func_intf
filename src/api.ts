@@ -1,7 +1,7 @@
 import Role from './types/role'
 import Policy, { PlcPath } from './types/policy'
 import {
-  RequestOptions,
+  type RequestOptions,
   gnlCpy,
   makeRequest,
   reqAll,
@@ -16,22 +16,21 @@ import KV from './types/kv'
 import Login from './types/login'
 import { message } from 'ant-design-vue'
 import { v4 } from 'uuid'
-import ZSK, { LibType } from './types/zsk'
-import axios, { AxiosRequestConfig, AxiosRequestHeaders } from 'axios'
+import ZSK, { type LibType } from './types/zsk'
+import axios, { type AxiosRequestConfig, type AxiosRequestHeaders } from 'axios'
 import A2wJob from './types/a2wJob'
 import PdfRcd from './types/pdfRcd'
 
-export const isProd = process.env.NODE_ENV === 'production'
 const gpusHost = '38.155.60.235'
 const appsHost = '38.152.2.152'
 const testHost = '192.168.1.11'
 
-export const toolsBoxURL = isProd ? `http://${appsHost}:3121` : undefined
-export const secretMgrURL = isProd ? `http://${appsHost}:3143` : undefined
-export const chatGlmURL = isProd ? `http://${appsHost}:8441` : undefined
-export const mqttHost = isProd ? appsHost : testHost
-export const ado2WdsURL = isProd ? `http://${gpusHost}:5111` : ''
-export const mgcPdfURL = isProd ? `http://${gpusHost}:3290` : ''
+export const toolsBoxURL = import.meta.env.PROD ? `http://${appsHost}:3121` : undefined
+export const secretMgrURL = import.meta.env.PROD ? `http://${appsHost}:3143` : undefined
+export const chatGlmURL = import.meta.env.PROD ? `http://${appsHost}:8441` : undefined
+export const mqttHost = import.meta.env.PROD ? appsHost : testHost
+export const ado2WdsURL = import.meta.env.PROD ? `http://${gpusHost}:5111` : ''
+export const mgcPdfURL = import.meta.env.PROD ? `http://${gpusHost}:3290` : ''
 
 const toolOpns = {
   project: 'tools_box',

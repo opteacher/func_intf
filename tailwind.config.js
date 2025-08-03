@@ -6,19 +6,30 @@ module.exports = {
     preflight: false
   },
   important: true,
-  content: ['./lib/src/**/*.{vue,ts}', './src/**/*.{vue,ts}'],
+  content: ['./index.html', './src/**/*.{vue,js,ts,jsx,tsx}', './lib/**/*.{vue,js,ts,jsx,tsx}'],
+  media: false, // or 'media' or 'class'
   theme: {
     extend: {
-      textColor: theme => ({
-        ...base.theme.textColor(theme)
-      }),
-      backgroundColor: theme => ({
-        ...base.theme.backgroundColor(theme)
-      }),
-      borderColor: theme => ({
-        ...base.theme.borderColor(theme)
-      })
-    }
+      ...base.theme.extend,
+      backgroundImage: {
+        login: 'url(/assets/background.png)'
+      },
+      lineHeight: {
+        '16': '4rem'
+      }
+    },
+    textColor: theme => ({
+      ...base.theme.textColor(theme)
+    }),
+    backgroundColor: theme => ({
+      ...base.theme.backgroundColor(theme)
+    }),
+    borderColor: theme => ({
+      ...base.theme.borderColor(theme)
+    })
+  },
+  variants: {
+    extend: {}
   },
   plugins: [
     plugin(function({ addBase, theme }) {

@@ -87,7 +87,7 @@
 </template>
 
 <script lang="ts" setup>
-import { message, notification, UploadChangeParam } from 'ant-design-vue'
+import { message, notification, type UploadChangeParam } from 'ant-design-vue'
 import { reactive, ref } from 'vue'
 import {
   UploadOutlined,

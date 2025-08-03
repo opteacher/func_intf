@@ -1,16 +1,16 @@
 <script lang="ts" setup>
 import {
-  InboxOutlined,
+  ToolOutlined,
   AudioOutlined,
   KeyOutlined,
-  MessageOutlined,
+  TableOutlined,
   PictureOutlined,
   FormOutlined,
   FilePdfOutlined
 } from '@ant-design/icons-vue'
 import router from './router'
-import { SelectInfo } from 'ant-design-vue/lib/menu/src/interface'
-import { reactive, ref } from 'vue'
+import { type SelectInfo } from 'ant-design-vue/lib/menu/src/interface'
+import { reactive } from 'vue'
 import { useRoute } from 'vue-router'
 
 const route = useRoute()
@@ -57,7 +57,7 @@ function onMuItmSelect(params: SelectInfo) {
             <span>PDF转文本</span>
           </a-menu-item>
           <a-sub-menu key="tool_box">
-            <template #icon><inbox-outlined /></template>
+            <template #icon><ToolOutlined /></template>
             <template #title>网络工具包</template>
             <a-menu-item key="encode">编码类</a-menu-item>
             <a-menu-item key="crypto">加解密</a-menu-item>
@@ -72,11 +72,6 @@ function onMuItmSelect(params: SelectInfo) {
             <a-menu-item key="user">用户</a-menu-item>
             <a-menu-item key="manage">密钥</a-menu-item>
           </a-sub-menu>
-          <a-sub-menu key="chat_glm">
-            <template #icon><message-outlined /></template>
-            <template #title>AI对话助手</template>
-            <a-menu-item key="chat">对话</a-menu-item>
-          </a-sub-menu>
           <a-sub-menu key="image_optimize">
             <template #icon><PictureOutlined /></template>
             <template #title>图像处理</template>
@@ -90,6 +85,13 @@ function onMuItmSelect(params: SelectInfo) {
             <a-menu-item key="view" disabled>展示表单</a-menu-item>
             <a-menu-item key="table" disabled>自定义表</a-menu-item>
           </a-sub-menu>
+          <a-sub-menu key="share_table">
+            <template #icon><TableOutlined /></template>
+            <template #title>共享表格</template>
+            <a-menu-item key="table">所有表格</a-menu-item>
+            <a-menu-item key="data" disabled>数据表</a-menu-item>
+            <a-menu-item key="user" disabled>用户表</a-menu-item>
+          </a-sub-menu>
         </a-menu>
       </a-layout-sider>
       <a-layout>
@@ -100,13 +102,3 @@ function onMuItmSelect(params: SelectInfo) {
     </a-layout>
   </a-layout>
 </template>
-
-<style lang="scss">
-#app {
-  font-family: Avenir, Helvetica, Arial, sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  color: #2c3e50;
-  height: 100%;
-}
-</style>

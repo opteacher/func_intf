@@ -1,4 +1,4 @@
-import { createRouter, RouteRecordRaw, createWebHashHistory } from 'vue-router'
+import { createRouter, type RouteRecordRaw, createWebHashHistory } from 'vue-router'
 import Audio2Words from '../views/Audio2Words.vue'
 import Encode from '../views/Encode.vue'
 import Crypto from '../views/Crypto.vue'
@@ -8,12 +8,12 @@ import Role from '../views/Role.vue'
 import User from '../views/User.vue'
 import Secret from '../views/Secret.vue'
 import Guide from '../views/Guide.vue'
-import ChatGLM from '../views/ChatGLM.vue'
 import MagicPDF from '../views/MagicPDF.vue'
 import ImageOptimize from '../views/ImageOptimize.vue'
 import CstmFormView from '../views/CstmFormView.vue'
 import CstmFormDsgn from '../views/CstmFormDsgn.vue'
 import CstmFormTable from '../views/CstmFormTable.vue'
+import ShareTable from '../views/ShareTable.vue'
 
 const routes: Array<RouteRecordRaw> = [
   {
@@ -75,11 +75,6 @@ const routes: Array<RouteRecordRaw> = [
     component: Guide
   },
   {
-    path: '/func_intf/chat_glm/chat',
-    name: 'chat_glm',
-    component: ChatGLM
-  },
-  {
     path: '/func_intf/image_optimize/denoise',
     name: 'image_denoise',
     component: ImageOptimize
@@ -103,11 +98,16 @@ const routes: Array<RouteRecordRaw> = [
     path: '/func_intf/custom_form/table/:fid',
     name: 'custom_formTable',
     component: CstmFormTable
+  },
+  {
+    path: '/func_intf/share_table/table',
+    name: 'share_tableTable',
+    component: ShareTable
   }
 ]
 
 const router = createRouter({
-  history: createWebHashHistory(process.env.BASE_URL || '/func_intf'),
+  history: createWebHashHistory('/func_intf'),
   routes
 })
 

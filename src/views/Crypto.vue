@@ -5,7 +5,6 @@ import { PlusOutlined, DeleteOutlined } from '@ant-design/icons-vue'
 import api from '@/api'
 import { notification } from 'ant-design-vue'
 import OutPanel from '@/components/OutPanel.vue'
-import { ChangeEvent } from 'ant-design-vue/lib/_util/EventInterface'
 
 const aymAlgs = {
   sha1: 'SHA.1',
@@ -76,7 +75,7 @@ async function onDoClick() {
             class="w-full"
             :value="salt"
             placeholder="输入盐"
-            @change="(e: ChangeEvent) => { salts[index] = e.target.value as string }"
+            @change="(e: any) => { salts[index] = e.target.value as string }"
           >
             <template #suffix>
               <delete-outlined
