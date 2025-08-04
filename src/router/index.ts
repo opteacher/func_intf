@@ -14,6 +14,7 @@ import CstmFormView from '../views/CstmFormView.vue'
 import CstmFormDsgn from '../views/CstmFormDsgn.vue'
 import CstmFormTable from '../views/CstmFormTable.vue'
 import ShareTable from '../views/ShareTable.vue'
+import StblUser from '../views/StblUser.vue'
 
 const routes: Array<RouteRecordRaw> = [
   {
@@ -103,6 +104,11 @@ const routes: Array<RouteRecordRaw> = [
     path: '/func_intf/share_table/table',
     name: 'share_tableTable',
     component: ShareTable
+  },
+  {
+    path: '/func_intf/share_table/user',
+    name: 'share_tableUser',
+    component: StblUser
   }
 ]
 

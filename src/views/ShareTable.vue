@@ -8,12 +8,14 @@ import { computed, reactive } from 'vue'
 import { compoOpns, cmpNickDict, type CompoType } from '@lib/types/index'
 import { cloneDeep } from 'lodash'
 import FormGroup from '@lib/components/FormGroup.vue'
-import { DeleteOutlined } from '@ant-design/icons-vue'
+import { DeleteOutlined, UserOutlined, TableOutlined } from '@ant-design/icons-vue'
+import api from '@/api'
+import JsonEditor from '@lib/components/JsonEditor.vue'
+import { useRouter } from 'vue-router'
 
+const router = useRouter()
 const shareTable = reactive({
-  api: {
-    all: () => []
-  },
+  api: api.shareTable.stable,
   columns: [new Column('名称', 'name'), new Column('表单结构', 'form')],
   mapper: new Mapper({
     name: {
@@ -49,9 +51,8 @@ const tableDesign = reactive({
     label: '',
     type: 'Input',
     placeholder: '',
-    required: false,
-    desc: '',
-    extra: {} as any
+    rules: [{ required: false, message: '必须输入/选择值！' }],
+    desc: ''
   },
   colMapper: null as any
 })
@@ -86,18 +87,43 @@ function onNewColSubmit(stable: STable) {
   onClsNewColClick()
 }
 function resetTblDsgnForm() {
-  tableDesign.form.key = ''
-  tableDesign.form.label = ''
-  tableDesign.form.type = 'Input'
-  tableDesign.form.required = false
-  tableDesign.form.desc = ''
-  tableDesign.form.extra = {}
+  tableDesign.form = {
+    key: '',
+    label: '',
+    type: 'Input',
+    placeholder: '',
+    rules: [{ required: false, message: '必须输入/选择值！' }],
+    desc: ''
+  }
 }
 function onDelColSubmit(column: any) {
   const index = tableDesign.columns.findIndex(col => col.key === column.key)
   if (index !== -1) {
     tableDesign.columns.splice(index, 1)
   }
+}
+function onSTableEdit(record: STable) {
+  tableDesign.columns = tableDesign.columns.concat(
+    Object.values(record.form).map(fld => ({
+      title: fld.label,
+      dataIndex: fld.key,
+      key: fld.key,
+      mapper: fld
+    }))
+  )
+}
+function onStblFormClose() {
+  tableDesign.columns = [
+    {
+      title: '新增列',
+      dataIndex: 'addCol',
+      key: 'addCol',
+      width: 120
+    }
+  ]
+}
+function gotoUserPage(record: STable) {
+  router.push({ path: '/func_intf/share_table/user', query: { tid: record.key } })
 }
 </script>
 
@@ -109,7 +135,30 @@ function onDelColSubmit(column: any) {
     :columns="shareTable.columns"
     :mapper="shareTable.mapper"
     :new-fun="() => newOne(STable)"
+    @edit="onSTableEdit"
+    @form-close="onStblFormClose"
   >
+    <template #operaBefore="{ record }">
+      <a-button type="text" size="small" @click="() => gotoUserPage(record)">
+        <template #icon><UserOutlined /></template>
+        管理用户
+      </a-button>
+      <br />
+      <a-button type="text" size="small">
+        <template #icon><TableOutlined /></template>
+        查看数据
+      </a-button>
+      <br />
+    </template>
+    <template #form="{ record }: any">
+      <JsonEditor
+        :value="record.form"
+        :disabled="true"
+        :mainMenuBar="false"
+        :navigationBar="false"
+        :statusBar="false"
+      />
+    </template>
     <template #formEDT="{ editing }: any">
       <a-form-item-rest>
         <a-table :data-source="tableDesign.data" :columns="tableDesign.columns" :pagination="false">
@@ -166,7 +215,7 @@ function onDelColSubmit(column: any) {
               />
               <a-switch
                 v-else-if="record.addCol === '必填/必选'"
-                v-model:checked="tableDesign.form.required"
+                v-model:checked="tableDesign.form.rules[0].required"
               />
               <a-textarea
                 v-else-if="record.addCol === '描述'"
@@ -176,8 +225,8 @@ function onDelColSubmit(column: any) {
               <a-form v-else-if="record.addCol === '额外参数'">
                 <FormGroup
                   :mapper="new Mapper(getProp(extraDict, tableDesign.form.type) || {})"
-                  :form="tableDesign.form.extra"
-                  @update:fprop="(e: any) => Object.assign(tableDesign.form.extra, e)"
+                  :form="tableDesign.form"
+                  @update:fprop="(e: any) => Object.assign(tableDesign.form, e)"
                 >
                   <template #chkLabels>
                     <a-form-item-rest>
@@ -208,7 +257,7 @@ function onDelColSubmit(column: any) {
                 {{ column.mapper.placeholder || '无' }}
               </a-typography-text>
               <a-typography-text v-else-if="record.addCol === '必填/必选'">
-                {{ column.mapper.required ? '必填/必选' : '非必要' }}
+                {{ column.mapper.rules[0].required ? '必要' : '非必要' }}
               </a-typography-text>
               <a-typography-text v-else-if="record.addCol === '描述'">
                 {{ column.mapper.desc || '无' }}
@@ -220,12 +269,12 @@ function onDelColSubmit(column: any) {
                       class="w-96"
                       :lbl-wid="4"
                       :mapper="new Mapper(getProp(extraDict, column.mapper.type))"
-                      :form="column.mapper.extra"
+                      :form="column.mapper"
                       :viewOnly="true"
                     >
                       <template #optionsVW>
                         <ul>
-                          <li v-for="option in column.mapper.extra.options">
+                          <li v-for="option in column.mapper.options">
                             {{ option.label }}&nbsp;
                             <span class="text-gray-400">{{ option.value }}</span>
                           </li>

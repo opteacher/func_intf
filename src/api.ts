@@ -7,6 +7,7 @@ import {
   reqAll,
   reqDelete,
   reqGet,
+  reqLink,
   reqPost,
   reqPut,
   setProp
@@ -17,9 +18,12 @@ import Login from './types/login'
 import { message } from 'ant-design-vue'
 import { v4 } from 'uuid'
 import ZSK, { type LibType } from './types/zsk'
-import axios, { type AxiosRequestConfig, type AxiosRequestHeaders } from 'axios'
+import axios, { type AxiosRequestConfig } from 'axios'
 import A2wJob from './types/a2wJob'
 import PdfRcd from './types/pdfRcd'
+import STable from './types/sTable'
+import router from './router'
+import StUser from './types/stUser'
 
 const gpusHost = '38.155.60.235'
 const appsHost = '38.152.2.152'
@@ -60,7 +64,7 @@ const mgcPdfOpns = {
 const bindLgnTkn = (): RequestOptions => {
   ;(secretOpns.axiosConfig as AxiosRequestConfig<any>).headers = {
     'X-Login-Token': window.localStorage.getItem('token')
-  } as AxiosRequestHeaders
+  } as any
   return secretOpns
 }
 
@@ -237,6 +241,44 @@ const expIns = {
         makeRequest(axios.get(url, { baseURL: mgcPdfURL }), {
           messages: { failed: '查询文档失败！' }
         })
+    }
+  },
+  shareTable: {
+    stable: {
+      all: () => reqAll('stable', { project: 'share-table', copy: STable.copy }),
+      add: (stable: STable) => reqPost('stable', stable, { project: 'share-table' }),
+      remove: (stable: STable) => reqDelete('stable', stable.key, { project: 'share-table' })
+    },
+    user: {
+      all: () =>
+        reqGet('stable', router.currentRoute.value.query.tid, {
+          project: 'share-table',
+          copy: STable.copy
+        }).then(stbl => stbl.fkUsers),
+      add: async (stUser: StUser) => {
+        const user = await reqPost('user', stUser, { project: 'share-table', copy: StUser.copy })
+        await reqLink(
+          {
+            parent: ['stable', router.currentRoute.value.query.tid],
+            child: ['fkUsers', user.key]
+          },
+          true,
+          { project: 'share-table' }
+        )
+        return user
+      },
+      update: (stUser: StUser) => reqPut('user', stUser.key, stUser, { project: 'share-table' }),
+      remove: async (stUser: StUser) => {
+        await reqLink(
+          {
+            parent: ['stable', router.currentRoute.value.query.tid],
+            child: ['fkUsers', stUser.key]
+          },
+          false,
+          { project: 'share-table' }
+        )
+        return reqDelete('user', stUser.key, { project: 'share-table' })
+      }
     }
   }
 }

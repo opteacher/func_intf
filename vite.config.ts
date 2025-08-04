@@ -13,27 +13,32 @@ export default defineConfig({
   },
   server: {
     proxy: {
-      '/(tools_box|secret_manager|chat_glm_config)/(mdl?|api)': {
+      '^/(tools_box|secret_manager|chat_glm_config)/(mdl?|api)': {
         target: 'http://124.28.221.82:6031/',
         ws: true,
         changeOrigin: true
       },
-      '/audio_words/(api|mdl)': {
+      '^/audio_words/(api|mdl)': {
         target: 'http://124.28.221.82:6031/',
         ws: true,
         changeOrigin: true
       },
-      '/magic_pdf_apis/(mdl?|api)': {
+      '^/magic_pdf_apis/(mdl?|api)': {
         target: 'http://124.28.221.82:6031/',
         ws: true,
         changeOrigin: true
       },
-      '/custom_form/(mdl|api)': {
+      '^/custom_form/(mdl|api)': {
         target: 'http://124.28.221.82:6031/',
         ws: true,
         changeOrigin: true
       },
-      '/ait-xecutor/service/rs': {
+      '^/share-table/(mdl|api)': {
+        target: 'http://124.28.221.82:6031/',
+        ws: true,
+        changeOrigin: true
+      },
+      '^/ait-xecutor/service/rs': {
         target: 'http://124.28.221.82/',
         ws: true,
         changeOrigin: true

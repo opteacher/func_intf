@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { defineProps, ref } from 'vue'
+import { ref } from 'vue'
 import { CopyOutlined } from '@ant-design/icons-vue'
 import { message } from 'ant-design-vue'
 

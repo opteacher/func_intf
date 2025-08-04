@@ -18,7 +18,7 @@ const sideKeys = reactive<string[]>([])
 const openKeys = reactive<string[]>([])
 
 router.beforeEach(to => {
-  const paths = to.path.split('/')
+  const paths = to.path.split('/').filter(sec => sec)
   sideKeys.splice(0, sideKeys.length, ...paths)
   if (paths.length) {
     openKeys.splice(0, openKeys.length, ...paths.slice(0, -1))

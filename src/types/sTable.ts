@@ -1,25 +1,29 @@
 import Mapper, { EdtLstMapper } from '@lib/types/mapper'
 import { gnlCpy } from '@lib/utils'
+import StUser from './stUser'
 
 export default class STable {
   key: string
   name: string
   form: object
+  fkUsers: StUser[]
 
   constructor() {
     this.key = ''
     this.name = ''
     this.form = {}
+    this.fkUsers = []
   }
 
   reset() {
     this.key = ''
     this.name = ''
     this.form = {}
+    this.fkUsers = []
   }
 
   static copy(src: any, tgt?: STable, force = false): STable {
-    return gnlCpy(STable, src, tgt, { force })
+    return gnlCpy(STable, src, tgt, { force, cpyMapper: { fkUsers: StUser.copy } })
   }
 }
 
