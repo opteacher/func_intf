@@ -1,13 +1,16 @@
 import { gnlCpy } from '@lib/utils'
 import Auth from './stAuth'
+import { BaseMapper } from '@lib/types/mapper'
+import { cloneDeep } from 'lodash'
 
-export default class StUser {
+export default class StUser extends BaseMapper {
   key: string
   lgnIden: string // 登录标识
   password: string
   auth: Auth
 
   constructor() {
+    super()
     this.key = ''
     this.lgnIden = ''
     this.password = ''
@@ -15,6 +18,7 @@ export default class StUser {
   }
 
   reset() {
+    super.reset()
     this.key = ''
     this.lgnIden = ''
     this.password = ''
@@ -22,6 +26,6 @@ export default class StUser {
   }
 
   static copy(src: any, tgt?: StUser, force = false) {
-    return gnlCpy(StUser, src, tgt, { force, cpyMapper: { auth: Auth.copy } })
+    return gnlCpy(StUser, src, tgt, { force, baseCpy: cloneDeep, cpyMapper: { auth: Auth.copy } })
   }
 }

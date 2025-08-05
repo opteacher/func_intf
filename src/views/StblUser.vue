@@ -3,14 +3,17 @@ import EditableTable from '@lib/components/EditableTable.vue'
 import api from '@/api'
 import { newOne, getProp } from '@lib/utils'
 import Column from '@lib/types/column'
-import Mapper from '@lib/types/mapper'
+import Mapper, { mapTypeTemps } from '@lib/types/mapper'
 import StUser from '@/types/stUser'
 import { onMounted, reactive } from 'vue'
 import Auth, { type AuthInterface } from '@/types/stAuth'
 import NumPairLst from '@/components/NumPairLst.vue'
 import { LeftOutlined } from '@ant-design/icons-vue'
 import { useRoute, useRouter } from 'vue-router'
-import { message, notification } from 'ant-design-vue'
+import { notification } from 'ant-design-vue'
+import { TinyEmitter } from 'tiny-emitter'
+import { compoOpns } from '@lib/types'
+import { avaCmpTypes, extraDict } from '@/types/sTable'
 
 const route = useRoute()
 const router = useRouter()
@@ -25,9 +28,71 @@ const userTable = reactive({
     password: {
       type: 'Password',
       label: '密码'
+    },
+    propForm: {
+      type: 'FormGroup',
+      label: '新字段',
+      canFold: false,
+      display: false,
+      items: new Mapper({
+        label: { type: 'Input', label: '标签' },
+        type: {
+          type: 'Select',
+          label: '类型',
+          options: compoOpns.filter(opn => avaCmpTypes.includes(opn.value)),
+          onChange: (_user: StUser, newType: keyof typeof extraDict) => {
+            const bscItems = Object.entries(userTable.mapper.propForm.items).filter(([key]) =>
+              ['label', 'type', 'submit'].includes(key)
+            )
+            bscItems.splice(-1, 0, ...Object.entries(extraDict[newType]))
+            userTable.emitter.emit('update:mprop', {
+              'propForm.items': Object.fromEntries(bscItems)
+            })
+            userTable.emitter.emit('update:dprop', mapTypeTemps[newType]())
+          }
+        },
+        submit: {
+          type: 'Buttons',
+          offset: 4,
+          buttons: [
+            {
+              inner: '确定',
+              primary: true,
+              ghost: false,
+              onClick: () => {
+                console.log('abcd')
+              }
+            },
+            {
+              inner: '取消',
+              primary: false,
+              ghost: false,
+              onClick: () =>
+                userTable.emitter.emit('update:mprop', {
+                  'addProp.display': true,
+                  'propForm.display': false
+                })
+            }
+          ]
+        }
+      })
+    },
+    addProp: {
+      type: 'Button',
+      inner: '添加字段',
+      offset: 4,
+      primary: false,
+      ghost: false,
+      dashed: true,
+      onClick: () =>
+        userTable.emitter.emit('update:mprop', {
+          'addProp.display': false,
+          'propForm.display': true
+        })
     }
   }),
-  formState: new StUser()
+  formState: new StUser(),
+  emitter: new TinyEmitter()
 })
 const authTable = reactive({
   visible: false,
@@ -104,18 +169,18 @@ function resetUserAuth() {
 
 <template>
   <EditableTable
+    :imExport="[{}, true]"
     :api="api.shareTable.user"
     :columns="userTable.columns"
     :mapper="userTable.mapper"
+    :emitter="userTable.emitter"
     :new-fun="() => newOne(StUser)"
   >
     <template #title>
-      <a-space>
-        <a-button type="text" @click="() => router.back()">
-          <template #icon><LeftOutlined /></template>
-        </a-button>
+      <a-button type="text" @click="() => router.back()">
+        <template #icon><LeftOutlined /></template>
         用户管理
-      </a-space>
+      </a-button>
     </template>
     <template #operaBefore="{ record }">
       <a-button type="link" size="small" @click="() => onAuthConf(record)">配置权限</a-button>

@@ -18,7 +18,8 @@ const shareTable = reactive({
   api: api.shareTable.stable,
   columns: [
     new Column('名称', 'name'),
-    new Column('表单类型', 'editMod'),
+    new Column('表单类型', 'edtMod'),
+    new Column('用户授权', 'usrAuth'),
     new Column('表单结构', 'form')
   ],
   mapper: new Mapper({
@@ -27,13 +28,18 @@ const shareTable = reactive({
       label: '表格名称',
       rules: [{ required: true, message: '请输入表格名称' }]
     },
-    editMod: {
+    edtMod: {
       type: 'Radio',
       label: '表单类型',
       options: [
-        { label: '双击直改', value: 'direct' },
+        { label: '直接修改', value: 'direct' },
         { label: '表单修改', value: 'form' }
       ]
+    },
+    usrAuth: {
+      type: 'Switch',
+      label: '用户授权',
+      chkLabels: ['不需要', '需要']
     },
     form: {
       type: 'JsonEditor',
@@ -41,7 +47,7 @@ const shareTable = reactive({
     }
   })
 })
-const tableDesign = reactive({
+const tblDsg = reactive({
   columns: [
     {
       title: '新增列',
@@ -66,33 +72,52 @@ const tableDesign = reactive({
     rules: [{ required: false, message: '必须输入/选择值！' }],
     desc: ''
   },
-  colMapper: null as any
+  colMapper: null as any,
+  errFields: [] as string[]
 })
-const isNewCol = computed(() => tableDesign.columns.findIndex(col => col.key === 'newCol') !== -1)
-const editKey = computed(() => tableDesign.form.key)
+const isNewCol = computed(() => tblDsg.columns.findIndex(col => col.key === 'newCol') !== -1)
+const editKey = computed(() => tblDsg.form.key)
 
 function onAddColClick() {
-  if (!tableDesign.columns.find(col => col.key === 'newCol')) {
-    tableDesign.columns.push({ title: '', dataIndex: 'newCol', key: 'newCol' })
+  if (!tblDsg.columns.find(col => col.key === 'newCol')) {
+    tblDsg.columns.push({ title: '', dataIndex: 'newCol', key: 'newCol' })
   } else {
     onClsNewColClick()
   }
 }
 function onClsNewColClick() {
-  const index = tableDesign.columns.findIndex(col => col.key === 'newCol')
+  const index = tblDsg.columns.findIndex(col => col.key === 'newCol')
   if (index !== -1) {
-    tableDesign.columns.splice(index, 1)
+    tblDsg.columns.splice(index, 1)
   }
+  resetTblDsgnForm()
 }
 function onNewColSubmit(stable: STable) {
-  tableDesign.columns.push({
-    title: tableDesign.form.label,
-    dataIndex: tableDesign.form.key,
-    key: tableDesign.form.key,
-    mapper: cloneDeep(tableDesign.form)
-  })
+  tblDsg.errFields = []
+  for (const prop of ['key', 'label', 'type']) {
+    if (!tblDsg.form[prop as keyof typeof tblDsg.form]) {
+      tblDsg.errFields.push(prop)
+    }
+  }
+  if (tblDsg.errFields.length) {
+    return
+  }
+  const column = tblDsg.columns.find(col => col.key === tblDsg.form.key)
+  if (column) {
+    column.title = tblDsg.form.label
+    column.dataIndex = tblDsg.form.key
+    column.key = tblDsg.form.key
+    column.mapper = cloneDeep(tblDsg.form)
+  } else {
+    tblDsg.columns.push({
+      title: tblDsg.form.label,
+      dataIndex: tblDsg.form.key,
+      key: tblDsg.form.key,
+      mapper: cloneDeep(tblDsg.form)
+    })
+  }
   stable.form = Object.fromEntries(
-    tableDesign.columns
+    tblDsg.columns
       .filter(col => !['addCol', 'newCol'].includes(col.key))
       .map(col => [col.key, cloneDeep(col.mapper)])
   )
@@ -100,7 +125,7 @@ function onNewColSubmit(stable: STable) {
   onClsNewColClick()
 }
 function resetTblDsgnForm() {
-  tableDesign.form = {
+  tblDsg.form = {
     key: '',
     label: '',
     type: 'Input',
@@ -110,13 +135,13 @@ function resetTblDsgnForm() {
   }
 }
 function onDelColSubmit(column: any) {
-  const index = tableDesign.columns.findIndex(col => col.key === column.key)
+  const index = tblDsg.columns.findIndex(col => col.key === column.key)
   if (index !== -1) {
-    tableDesign.columns.splice(index, 1)
+    tblDsg.columns.splice(index, 1)
   }
 }
 function onSTableEdit(record: STable) {
-  tableDesign.columns = tableDesign.columns.concat(
+  tblDsg.columns = tblDsg.columns.concat(
     Object.values(record.form).map(fld => ({
       title: fld.label,
       dataIndex: fld.key,
@@ -126,7 +151,7 @@ function onSTableEdit(record: STable) {
   )
 }
 function onStblFormClose() {
-  tableDesign.columns = [
+  tblDsg.columns = [
     {
       title: '新增列',
       dataIndex: 'addCol',
@@ -140,6 +165,9 @@ function gotoUserPage(record: STable) {
 }
 function gotoDataPage(record: STable) {
   router.push({ path: '/func_intf/share_table/data', query: { tid: record.key } })
+}
+function onGenPlaceholderClick() {
+  setProp(tblDsg.form, 'placeholder', '输入/选择' + tblDsg.form.label)
 }
 </script>
 
@@ -166,6 +194,12 @@ function gotoDataPage(record: STable) {
       </a-button>
       <br />
     </template>
+    <template #usrAuth="{ record }: any">
+      {{ record.usrAuth ? '需要' : '不需要' }}
+      <a-tag v-if="record.usrAuth && !record.fkUsers.length" class="ms-1" color="warning">
+        目前没有用户，需要先注册用户
+      </a-tag>
+    </template>
     <template #form="{ record }: any">
       <JsonEditor
         :value="record.form"
@@ -177,7 +211,12 @@ function gotoDataPage(record: STable) {
     </template>
     <template #formEDT="{ editing }: any">
       <a-form-item-rest>
-        <a-table :data-source="tableDesign.data" :columns="tableDesign.columns" :pagination="false">
+        <a-table
+          :data-source="tblDsg.data"
+          :columns="tblDsg.columns"
+          :pagination="false"
+          size="small"
+        >
           <template #headerCell="{ column }">
             <template v-if="column.key === 'addCol'">
               <a @click="onAddColClick">
@@ -190,15 +229,19 @@ function gotoDataPage(record: STable) {
             <template v-else-if="column.key === 'newCol' || (editKey && column.key === editKey)">
               <a-input
                 class="flex-1"
+                :status="tblDsg.errFields.includes('label') ? 'error' : undefined"
                 placeholder="请输入列名（中文）"
-                v-model:value="tableDesign.form.label"
+                v-model:value="tblDsg.form.label"
               />
+              <a-typography-text v-if="tblDsg.errFields.includes('label')" type="danger">
+                必须填写列名！
+              </a-typography-text>
             </template>
             <template v-else>
               <a-button
                 type="link"
                 size="small"
-                @click="() => (tableDesign.form = cloneDeep(column.mapper))"
+                @click="() => (tblDsg.form = cloneDeep(column.mapper))"
               >
                 {{ column.title }}
               </a-button>
@@ -219,36 +262,54 @@ function gotoDataPage(record: STable) {
               </a-space>
             </template>
             <template v-else-if="column.key === 'newCol' || (editKey && column.key === editKey)">
-              <a-input
-                v-if="record.addCol === '唯一标识'"
-                placeholder="输入唯一标识（英文）"
-                v-model:value="tableDesign.form.key"
-              />
-              <a-select
-                v-else-if="record.addCol === '类型'"
-                placeholder="选择类型"
-                :options="compoOpns.filter(opn => avaCmpTypes.includes(opn.value))"
-                v-model:value="tableDesign.form.type"
-              />
-              <a-input
-                v-else-if="record.addCol === '提示'"
-                placeholder="输入表单框中提示"
-                v-model:value="tableDesign.form.placeholder"
-              />
+              <template v-if="record.addCol === '唯一标识'">
+                <a-input
+                  :status="tblDsg.errFields.includes('key') ? 'error' : undefined"
+                  placeholder="输入唯一标识（英文）"
+                  v-model:value="tblDsg.form.key"
+                />
+                <a-typography-text v-if="tblDsg.errFields.includes('key')" type="danger">
+                  必须填写唯一标识！
+                </a-typography-text>
+              </template>
+              <template v-else-if="record.addCol === '类型'">
+                <a-select
+                  :status="tblDsg.errFields.includes('type') ? 'error' : undefined"
+                  placeholder="选择类型"
+                  :options="compoOpns.filter(opn => avaCmpTypes.includes(opn.value))"
+                  v-model:value="tblDsg.form.type"
+                />
+                <a-typography-text v-if="tblDsg.errFields.includes('type')" type="danger">
+                  必须填写唯一标识！
+                </a-typography-text>
+              </template>
+              <a-input-group v-else-if="record.addCol === '提示'">
+                <a-row :gutter="8">
+                  <a-col :span="20">
+                    <a-input
+                      placeholder="输入表单框中提示"
+                      v-model:value="tblDsg.form.placeholder"
+                    />
+                  </a-col>
+                  <a-col :span="4">
+                    <a-button class="w-full" @click="onGenPlaceholderClick">生成提示</a-button>
+                  </a-col>
+                </a-row>
+              </a-input-group>
               <a-switch
                 v-else-if="record.addCol === '必填/必选'"
-                v-model:checked="tableDesign.form.rules[0].required"
+                v-model:checked="tblDsg.form.rules[0].required"
               />
               <a-textarea
                 v-else-if="record.addCol === '描述'"
                 placeholder="输入描述"
-                v-model:value="tableDesign.form.desc"
+                v-model:value="tblDsg.form.desc"
               />
               <a-form v-else-if="record.addCol === '额外参数'">
                 <FormGroup
-                  :mapper="new Mapper(getProp(extraDict, tableDesign.form.type) || {})"
-                  :form="tableDesign.form"
-                  @update:fprop="(e: any) => Object.assign(tableDesign.form, e)"
+                  :mapper="new Mapper(getProp(extraDict, tblDsg.form.type) || {})"
+                  :form="tblDsg.form"
+                  @update:fprop="(e: any) => Object.assign(tblDsg.form, e)"
                 >
                   <template #chkLabels>
                     <a-form-item-rest>
@@ -304,7 +365,7 @@ function gotoDataPage(record: STable) {
                       </template>
                     </FormGroup>
                   </template>
-                  <a-button @click="() => setProp(tableDesign, 'colMapper', column.mapper)">
+                  <a-button @click="() => setProp(tblDsg, 'colMapper', column.mapper)">
                     显示额外参数
                   </a-button>
                 </a-popover>
@@ -324,9 +385,3 @@ function gotoDataPage(record: STable) {
     </template>
   </EditableTable>
 </template>
-
-<style>
-.ant-form-item:last-child {
-  margin-bottom: 0 !important;
-}
-</style>

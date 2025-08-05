@@ -7,7 +7,8 @@ export default class STable {
   key: string
   name: string
   form: object
-  editMod: 'form' | 'direct' // 表单类型
+  edtMod: 'form' | 'direct' // 表单类型
+  usrAuth: boolean // 是否需要用户授权
   fkUsers: StUser[]
   fkRecords: StRcd[]
 
@@ -15,7 +16,8 @@ export default class STable {
     this.key = ''
     this.name = ''
     this.form = {}
-    this.editMod = 'direct' // 默认是直接类型
+    this.edtMod = 'direct' // 默认是直接类型
+    this.usrAuth = false // 默认不需要用户授权
     this.fkUsers = []
     this.fkRecords = []
   }
@@ -24,7 +26,8 @@ export default class STable {
     this.key = ''
     this.name = ''
     this.form = {}
-    this.editMod = 'direct' // 默认是直接类型
+    this.edtMod = 'direct' // 默认是直接类型
+    this.usrAuth = false
     this.fkUsers = []
     this.fkRecords = []
   }
@@ -127,14 +130,18 @@ export const extraDict = {
   Checkbox: {
     options: opnsMapper,
     chkLabels: {
-      type: 'Unknown',
-      label: '复选框标签'
+      type: 'CompactInput',
+      label: '复选框标签',
+      placeholders: ['未选中', '选中'],
+      splitLetter: '|'
     }
   },
   Switch: {
     chkLabels: {
-      type: 'Unknown',
-      label: '开关标签'
+      type: 'CompactInput',
+      label: '开关标签',
+      placeholders: ['关', '开'],
+      splitLetter: '/'
     }
   },
   UploadFile: {
