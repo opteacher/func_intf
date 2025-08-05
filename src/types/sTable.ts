@@ -1,29 +1,39 @@
 import Mapper, { EdtLstMapper } from '@lib/types/mapper'
 import { gnlCpy } from '@lib/utils'
 import StUser from './stUser'
+import StRcd from './stRecord'
 
 export default class STable {
   key: string
   name: string
   form: object
+  editMod: 'form' | 'direct' // 表单类型
   fkUsers: StUser[]
+  fkRecords: StRcd[]
 
   constructor() {
     this.key = ''
     this.name = ''
     this.form = {}
+    this.editMod = 'direct' // 默认是直接类型
     this.fkUsers = []
+    this.fkRecords = []
   }
 
   reset() {
     this.key = ''
     this.name = ''
     this.form = {}
+    this.editMod = 'direct' // 默认是直接类型
     this.fkUsers = []
+    this.fkRecords = []
   }
 
   static copy(src: any, tgt?: STable, force = false): STable {
-    return gnlCpy(STable, src, tgt, { force, cpyMapper: { fkUsers: StUser.copy } })
+    return gnlCpy(STable, src, tgt, {
+      force,
+      cpyMapper: { fkUsers: StUser.copy, fkRecords: StRcd.copy }
+    })
   }
 }
 

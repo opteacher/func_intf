@@ -16,12 +16,24 @@ import { useRouter } from 'vue-router'
 const router = useRouter()
 const shareTable = reactive({
   api: api.shareTable.stable,
-  columns: [new Column('名称', 'name'), new Column('表单结构', 'form')],
+  columns: [
+    new Column('名称', 'name'),
+    new Column('表单类型', 'editMod'),
+    new Column('表单结构', 'form')
+  ],
   mapper: new Mapper({
     name: {
       type: 'Input',
       label: '表格名称',
       rules: [{ required: true, message: '请输入表格名称' }]
+    },
+    editMod: {
+      type: 'Radio',
+      label: '表单类型',
+      options: [
+        { label: '双击直改', value: 'direct' },
+        { label: '表单修改', value: 'form' }
+      ]
     },
     form: {
       type: 'JsonEditor',
@@ -57,6 +69,7 @@ const tableDesign = reactive({
   colMapper: null as any
 })
 const isNewCol = computed(() => tableDesign.columns.findIndex(col => col.key === 'newCol') !== -1)
+const editKey = computed(() => tableDesign.form.key)
 
 function onAddColClick() {
   if (!tableDesign.columns.find(col => col.key === 'newCol')) {
@@ -125,12 +138,15 @@ function onStblFormClose() {
 function gotoUserPage(record: STable) {
   router.push({ path: '/func_intf/share_table/user', query: { tid: record.key } })
 }
+function gotoDataPage(record: STable) {
+  router.push({ path: '/func_intf/share_table/data', query: { tid: record.key } })
+}
 </script>
 
 <template>
   <EditableTable
     title="共享表格"
-    :dlg-full-scrn="true"
+    dlg-width="100vw"
     :api="shareTable.api"
     :columns="shareTable.columns"
     :mapper="shareTable.mapper"
@@ -144,7 +160,7 @@ function gotoUserPage(record: STable) {
         管理用户
       </a-button>
       <br />
-      <a-button type="text" size="small">
+      <a-button type="text" size="small" @click="() => gotoDataPage(record)">
         <template #icon><TableOutlined /></template>
         查看数据
       </a-button>
@@ -171,7 +187,7 @@ function gotoUserPage(record: STable) {
                 </a-space>
               </a>
             </template>
-            <template v-else-if="column.key === 'newCol'">
+            <template v-else-if="column.key === 'newCol' || (editKey && column.key === editKey)">
               <a-input
                 class="flex-1"
                 placeholder="请输入列名（中文）"
@@ -179,7 +195,13 @@ function gotoUserPage(record: STable) {
               />
             </template>
             <template v-else>
-              {{ column.title }}
+              <a-button
+                type="link"
+                size="small"
+                @click="() => (tableDesign.form = cloneDeep(column.mapper))"
+              >
+                {{ column.title }}
+              </a-button>
               <a-popconfirm title="确定删除该列" @confirm="() => onDelColSubmit(column)">
                 <a-button type="text" danger>
                   <template #icon><DeleteOutlined /></template>
@@ -196,7 +218,7 @@ function gotoUserPage(record: STable) {
                 {{ record.addCol }}
               </a-space>
             </template>
-            <template v-else-if="column.key === 'newCol'">
+            <template v-else-if="column.key === 'newCol' || (editKey && column.key === editKey)">
               <a-input
                 v-if="record.addCol === '唯一标识'"
                 placeholder="输入唯一标识（英文）"
@@ -289,7 +311,7 @@ function gotoUserPage(record: STable) {
               </template>
             </template>
           </template>
-          <template v-if="isNewCol" #footer>
+          <template v-if="isNewCol || editKey" #footer>
             <div class="text-right">
               <a-space>
                 <a-button type="primary" @click="() => onNewColSubmit(editing)">确定</a-button>

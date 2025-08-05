@@ -129,7 +129,7 @@ function onFpropUpdate(values: Record<string, any>) {
     >
       <template #cstmFormSFX="{ formState }">
         <a-space>
-          <a-button :disabled="formState.cstmForm" @click="onToFormView">浏览表单</a-button>
+          <a-button :disabled="formState.cstmForm === ''" @click="onToFormView">浏览表单</a-button>
           <a-form-item-rest>
             <a-checkbox v-model:checked="fullView">全屏</a-checkbox>
           </a-form-item-rest>

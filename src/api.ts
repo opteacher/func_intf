@@ -4,6 +4,7 @@ import {
   type RequestOptions,
   gnlCpy,
   makeRequest,
+  pickOrIgnore,
   reqAll,
   reqDelete,
   reqGet,
@@ -24,6 +25,8 @@ import PdfRcd from './types/pdfRcd'
 import STable from './types/sTable'
 import router from './router'
 import StUser from './types/stUser'
+import StRcd from './types/stRecord'
+import { cloneDeep } from 'lodash'
 
 const gpusHost = '38.155.60.235'
 const appsHost = '38.152.2.152'
@@ -247,6 +250,9 @@ const expIns = {
     stable: {
       all: () => reqAll('stable', { project: 'share-table', copy: STable.copy }),
       add: (stable: STable) => reqPost('stable', stable, { project: 'share-table' }),
+      get: (tid: string) =>
+        reqGet<STable>('stable', tid, { project: 'share-table', copy: STable.copy }),
+      update: (stable: STable) => reqPut('stable', stable.key, stable, { project: 'share-table' }),
       remove: (stable: STable) => reqDelete('stable', stable.key, { project: 'share-table' })
     },
     user: {
@@ -278,6 +284,47 @@ const expIns = {
           { project: 'share-table' }
         )
         return reqDelete('user', stUser.key, { project: 'share-table' })
+      }
+    },
+    data: {
+      all: () =>
+        reqGet<STable>('stable', router.currentRoute.value.query.tid, {
+          project: 'share-table',
+          copy: STable.copy
+        }).then(stbl => stbl.fkRecords.map(rcd => ({ key: rcd.key, ...rcd.raw }))),
+      add: async (raw: any) => {
+        const newRcd = await reqPost<StRcd>(
+          'record',
+          { raw },
+          { project: 'share-table', copy: StRcd.copy }
+        )
+        await reqLink(
+          {
+            parent: ['stable', router.currentRoute.value.query.tid],
+            child: ['fkRecords', newRcd.key]
+          },
+          true,
+          { project: 'share-table' }
+        )
+        return newRcd
+      },
+      update: (record: any) =>
+        reqPut(
+          'record',
+          record.key,
+          { raw: pickOrIgnore(record, ['key'], true) },
+          { project: 'share-table' }
+        ),
+      remove: async (stRcd: StRcd) => {
+        await reqLink(
+          {
+            parent: ['stable', router.currentRoute.value.query.tid],
+            child: ['fkRecords', stRcd.key]
+          },
+          false,
+          { project: 'share-table' }
+        )
+        return reqDelete('record', stRcd.key, { project: 'share-table' })
       }
     }
   }

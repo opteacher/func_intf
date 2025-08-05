@@ -5,20 +5,22 @@ import { newOne, getProp } from '@lib/utils'
 import Column from '@lib/types/column'
 import Mapper from '@lib/types/mapper'
 import StUser from '@/types/stUser'
-import { reactive } from 'vue'
+import { onMounted, reactive } from 'vue'
 import Auth, { type AuthInterface } from '@/types/stAuth'
 import NumPairLst from '@/components/NumPairLst.vue'
 import { LeftOutlined } from '@ant-design/icons-vue'
-import { useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
+import { message, notification } from 'ant-design-vue'
 
+const route = useRoute()
 const router = useRouter()
 const userTable = reactive({
-  columns: [new Column('邮箱', 'email')],
+  columns: [new Column('登录标识', 'lgnIden')],
   mapper: new Mapper({
-    email: {
+    lgnIden: {
       type: 'Input',
-      label: '邮箱',
-      placeholder: '请输入邮箱'
+      label: '登录标识',
+      placeholder: '请输入登录标识'
     },
     password: {
       type: 'Password',
@@ -73,6 +75,16 @@ const operDict = {
   query: ['queriable', 'qryOnlyOwn']
 }
 
+onMounted(() => {
+  if (!route.query.tid) {
+    notification.warn({
+      message: '操作错误',
+      description: '必须从共享表格页选择跳转到用户页！'
+    })
+    router.replace('/func_intf/share_table/table')
+  }
+})
+
 function onAuthConf(user: StUser) {
   StUser.copy(user, userTable.formState)
   authTable.visible = true
@@ -109,7 +121,7 @@ function resetUserAuth() {
       <a-button type="link" size="small" @click="() => onAuthConf(record)">配置权限</a-button>
     </template>
   </EditableTable>
-  <a-modal width="80vw" v-model:open="authTable.visible" title="配置权限" @ok="onAuthSubmit">
+  <a-modal width="100vw" v-model:open="authTable.visible" title="配置权限" @ok="onAuthSubmit">
     <a-table
       bordered
       :columns="authTable.columns"
