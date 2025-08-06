@@ -1,14 +1,14 @@
 <script setup lang="ts">
 import EditableTable from '@lib/components/EditableTable.vue'
 import api from '@/api'
-import { newOne, getProp } from '@lib/utils'
+import { newOne, getProp, setProp } from '@lib/utils'
 import Column from '@lib/types/column'
 import Mapper, { mapTypeTemps } from '@lib/types/mapper'
 import StUser from '@/types/stUser'
 import { computed, onMounted, reactive } from 'vue'
 import Auth, { type AuthInterface } from '@/types/stAuth'
 import NumPairLst from '@/components/NumPairLst.vue'
-import { LeftOutlined, MinusCircleOutlined } from '@ant-design/icons-vue'
+import { LeftOutlined, MinusCircleOutlined, EditOutlined } from '@ant-design/icons-vue'
 import { useRoute, useRouter } from 'vue-router'
 import { notification } from 'ant-design-vue'
 import { TinyEmitter } from 'tiny-emitter'
@@ -31,6 +31,13 @@ const userTable = reactive({
     password: {
       type: 'Password',
       label: '密码'
+    },
+    extra: {
+      type: 'FormGroup',
+      label: '额外',
+      canFold: false,
+      prefix: true,
+      display: false
     }
   }),
   formState: new StUser(),
@@ -104,8 +111,8 @@ const userExtra = reactive({
     },
     addProp: {
       type: 'Button',
-      inner: '添加额外字段',
-      offset: 4,
+      label: '额外字段',
+      inner: '添加',
       primary: false,
       ghost: false,
       dashed: true,
@@ -176,9 +183,20 @@ onMounted(async () => {
   }
   STable.copy(await api.shareTable.stable.get(route.query.tid as string), stable, true)
   userTable.columns = userTable.columns.concat(
-    Object.values(stable.usrExtra).map(mapper => new Column(mapper.label, mapper.key))
+    Object.values(stable.usrExtra).map(
+      mapper => new Column(mapper.label, 'extra.' + mapper.key, { key: 'extra.item.' + mapper.key })
+    )
   )
-  userTable.emitter.emit('update:mprop', stable.usrExtra)
+  userTable.emitter.emit('update:mprop', {
+    'extra.display': Object.keys(stable.usrExtra).length !== 0,
+    'extra.items': stable.usrExtra
+  })
+  userExtra.emitter.emit(
+    'update:mprop',
+    Object.fromEntries(
+      Object.entries(stable.usrExtra).map(([key, val]) => [key, { ...val, disabled: true }])
+    )
+  )
 })
 
 function onAuthConf(user: StUser) {
@@ -298,11 +316,13 @@ async function onUsrExtMapperSubmit() {
   <FormDialog
     title="添加额外字段"
     :mapper="userExtra.mapper"
-    :object="stable.usrExtra"
     :emitter="userExtra.emitter"
     @submit="onUsrExtMapperSubmit"
   >
     <template v-for="prop in usrExtProps" #[`${prop}SFX`]>
+      <a-button type="link">
+        <template #icon><EditOutlined /></template>
+      </a-button>
       <a-popconfirm title="确定删除该组件？" @confirm="() => delete userExtra.mapper[prop]">
         <a-button type="text" danger>
           <template #icon><MinusCircleOutlined /></template>
