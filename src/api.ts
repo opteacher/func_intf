@@ -252,7 +252,7 @@ const expIns = {
       add: (stable: STable) => reqPost('stable', stable, { project: 'share-table' }),
       get: (tid: string) =>
         reqGet<STable>('stable', tid, { project: 'share-table', copy: STable.copy }),
-      update: (stable: STable) => reqPut('stable', stable.key, stable, { project: 'share-table' }),
+      update: (stable: any) => reqPut('stable', stable.key, stable, { project: 'share-table' }),
       remove: (stable: STable) => reqDelete('stable', stable.key, { project: 'share-table' })
     },
     user: {

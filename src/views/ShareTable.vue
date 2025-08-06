@@ -5,7 +5,7 @@ import Mapper from '@lib/types/mapper'
 import { newOne, setProp, getProp } from '@lib/utils'
 import STable, { avaCmpTypes, extraDict } from '@/types/sTable'
 import { computed, reactive } from 'vue'
-import { compoOpns, cmpNickDict, type CompoType } from '@lib/types/index'
+import { compoOpns, cmpNickDict, type CompoType, Cond } from '@lib/types/index'
 import { cloneDeep } from 'lodash'
 import FormGroup from '@lib/components/FormGroup.vue'
 import { DeleteOutlined, UserOutlined, TableOutlined } from '@ant-design/icons-vue'
@@ -20,6 +20,7 @@ const shareTable = reactive({
     new Column('名称', 'name'),
     new Column('表单类型', 'edtMod'),
     new Column('用户授权', 'usrAuth'),
+    new Column('用户注册', 'usrReg'),
     new Column('表单结构', 'form')
   ],
   mapper: new Mapper({
@@ -40,6 +41,13 @@ const shareTable = reactive({
       type: 'Switch',
       label: '用户授权',
       chkLabels: ['不需要', '需要']
+    },
+    usrReg: {
+      type: 'Switch',
+      label: '用户注册',
+      placeholder: '允许用户自己注册',
+      chkLabels: ['不允许', '允许'],
+      disabled: [Cond.create('usrAuth', '!=', true)]
     },
     form: {
       type: 'JsonEditor',

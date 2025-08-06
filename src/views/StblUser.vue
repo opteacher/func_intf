@@ -5,51 +5,71 @@ import { newOne, getProp } from '@lib/utils'
 import Column from '@lib/types/column'
 import Mapper, { mapTypeTemps } from '@lib/types/mapper'
 import StUser from '@/types/stUser'
-import { onMounted, reactive } from 'vue'
+import { computed, onMounted, reactive } from 'vue'
 import Auth, { type AuthInterface } from '@/types/stAuth'
 import NumPairLst from '@/components/NumPairLst.vue'
-import { LeftOutlined } from '@ant-design/icons-vue'
+import { LeftOutlined, MinusCircleOutlined } from '@ant-design/icons-vue'
 import { useRoute, useRouter } from 'vue-router'
 import { notification } from 'ant-design-vue'
 import { TinyEmitter } from 'tiny-emitter'
 import { compoOpns } from '@lib/types'
-import { avaCmpTypes, extraDict } from '@/types/sTable'
+import STable, { avaCmpTypes, extraDict } from '@/types/sTable'
+import FormDialog from '@lib/components/FormDialog.vue'
 
 const route = useRoute()
 const router = useRouter()
+const stable = reactive<STable>(new STable())
 const userTable = reactive({
   columns: [new Column('登录标识', 'lgnIden')],
   mapper: new Mapper({
     lgnIden: {
       type: 'Input',
       label: '登录标识',
-      placeholder: '请输入登录标识'
+      placeholder: '请输入登录标识',
+      rules: [{ required: true, message: '必须给出登录标识！该项用于用户登录' }]
     },
     password: {
       type: 'Password',
       label: '密码'
-    },
+    }
+  }),
+  formState: new StUser(),
+  emitter: new TinyEmitter()
+})
+const userExtra = reactive({
+  emitter: new TinyEmitter(),
+  mapper: new Mapper({
     propForm: {
       type: 'FormGroup',
       label: '新字段',
+      prefix: true,
       canFold: false,
       display: false,
       items: new Mapper({
-        label: { type: 'Input', label: '标签' },
         type: {
           type: 'Select',
           label: '类型',
           options: compoOpns.filter(opn => avaCmpTypes.includes(opn.value)),
           onChange: (_user: StUser, newType: keyof typeof extraDict) => {
-            const bscItems = Object.entries(userTable.mapper.propForm.items).filter(([key]) =>
-              ['label', 'type', 'submit'].includes(key)
+            const bscItems = Object.entries(userExtra.mapper.propForm.items).filter(([key]) =>
+              ['key', 'label', 'type', 'submit'].includes(key)
             )
             bscItems.splice(-1, 0, ...Object.entries(extraDict[newType]))
-            userTable.emitter.emit('update:mprop', {
+            userExtra.emitter.emit('update:mprop', {
               'propForm.items': Object.fromEntries(bscItems)
             })
-            userTable.emitter.emit('update:dprop', mapTypeTemps[newType]())
+            userExtra.emitter.emit('update:dprop', { propForm: mapTypeTemps[newType]() })
           }
+        },
+        label: {
+          type: 'Input',
+          label: '标签',
+          placeholder: '输入标签（中文）'
+        },
+        key: {
+          type: 'Input',
+          label: '标识',
+          placeholder: '输入标识（英文）'
         },
         submit: {
           type: 'Buttons',
@@ -59,8 +79,13 @@ const userTable = reactive({
               inner: '确定',
               primary: true,
               ghost: false,
-              onClick: () => {
-                console.log('abcd')
+              onClick: (form: any) => {
+                console.log(form)
+                userExtra.emitter.emit('update:mprop', {
+                  [form.propForm.key]: form.propForm,
+                  'addProp.display': true,
+                  'propForm.display': false
+                })
               }
             },
             {
@@ -68,7 +93,7 @@ const userTable = reactive({
               primary: false,
               ghost: false,
               onClick: () =>
-                userTable.emitter.emit('update:mprop', {
+                userExtra.emitter.emit('update:mprop', {
                   'addProp.display': true,
                   'propForm.display': false
                 })
@@ -79,20 +104,18 @@ const userTable = reactive({
     },
     addProp: {
       type: 'Button',
-      inner: '添加字段',
+      inner: '添加额外字段',
       offset: 4,
       primary: false,
       ghost: false,
       dashed: true,
       onClick: () =>
-        userTable.emitter.emit('update:mprop', {
+        userExtra.emitter.emit('update:mprop', {
           'addProp.display': false,
           'propForm.display': true
         })
     }
-  }),
-  formState: new StUser(),
-  emitter: new TinyEmitter()
+  })
 })
 const authTable = reactive({
   visible: false,
@@ -139,8 +162,11 @@ const operDict = {
   update: ['updatable', 'updOnlyOwn'],
   query: ['queriable', 'qryOnlyOwn']
 }
+const usrExtProps = computed(() =>
+  Object.keys(userExtra.mapper).filter(key => !['propForm', 'addProp'].includes(key))
+)
 
-onMounted(() => {
+onMounted(async () => {
   if (!route.query.tid) {
     notification.warn({
       message: '操作错误',
@@ -148,6 +174,11 @@ onMounted(() => {
     })
     router.replace('/func_intf/share_table/table')
   }
+  STable.copy(await api.shareTable.stable.get(route.query.tid as string), stable, true)
+  userTable.columns = userTable.columns.concat(
+    Object.values(stable.usrExtra).map(mapper => new Column(mapper.label, mapper.key))
+  )
+  userTable.emitter.emit('update:mprop', stable.usrExtra)
 })
 
 function onAuthConf(user: StUser) {
@@ -165,6 +196,15 @@ function resetUserAuth() {
   userTable.formState.reset()
   authTable.formState.reset()
 }
+async function onUsrExtMapperSubmit() {
+  await api.shareTable.stable.update({
+    key: stable.key,
+    usrExtra: Object.fromEntries(
+      Object.entries(userExtra.mapper).filter(([key]) => !['propForm', 'addProp'].includes(key))
+    )
+  })
+  userExtra.emitter.emit('update:visible', false)
+}
 </script>
 
 <template>
@@ -181,6 +221,9 @@ function resetUserAuth() {
         <template #icon><LeftOutlined /></template>
         用户管理
       </a-button>
+    </template>
+    <template #description>
+      <a-button @click="() => userExtra.emitter.emit('update:visible', true)">额外信息</a-button>
     </template>
     <template #operaBefore="{ record }">
       <a-button type="link" size="small" @click="() => onAuthConf(record)">配置权限</a-button>
@@ -252,4 +295,19 @@ function resetUserAuth() {
       </template>
     </a-table>
   </a-modal>
+  <FormDialog
+    title="添加额外字段"
+    :mapper="userExtra.mapper"
+    :object="stable.usrExtra"
+    :emitter="userExtra.emitter"
+    @submit="onUsrExtMapperSubmit"
+  >
+    <template v-for="prop in usrExtProps" #[`${prop}SFX`]>
+      <a-popconfirm title="确定删除该组件？" @confirm="() => delete userExtra.mapper[prop]">
+        <a-button type="text" danger>
+          <template #icon><MinusCircleOutlined /></template>
+        </a-button>
+      </a-popconfirm>
+    </template>
+  </FormDialog>
 </template>

@@ -10,6 +10,7 @@ import Mapper, { newObjByMapper } from '@lib/types/mapper'
 import { LeftOutlined } from '@ant-design/icons-vue'
 import STable from '@/types/sTable'
 import type StUser from '@/types/stUser'
+import FieldItem from '@lib/components/FieldItem.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -18,7 +19,8 @@ const emitter = new TinyEmitter()
 const mapper = ref(new Mapper())
 const columns = reactive<Column[]>([])
 const login = reactive({
-  form: { lgnIden: '', password: '' }
+  form: { lgnIden: '', password: '' },
+  mode: 'login' as 'login' | 'register'
 })
 
 onMounted(async () => {
@@ -47,7 +49,7 @@ function onLogin(form: StUser) {
 
 <template>
   <template v-if="stable.usrAuth">
-    <a-typography-title class="text-center" :level="2">共享表格</a-typography-title>
+    <a-typography-title :level="2">共享表格</a-typography-title>
     <a-form
       :model="login.form"
       :label-col="{ span: 10 }"
@@ -55,6 +57,13 @@ function onLogin(form: StUser) {
       autocomplete="off"
       @finish="onLogin"
     >
+      <a-form-item :wrapper-col="{ offset: 10 }">
+        <a-radio-group v-model:value="login.mode" button-style="solid">
+          <a-radio-button value="login">登录</a-radio-button>
+          <a-radio-button value="register">注册</a-radio-button>
+        </a-radio-group>
+      </a-form-item>
+
       <a-form-item
         label="登录标识"
         name="lgnIden"
@@ -71,8 +80,24 @@ function onLogin(form: StUser) {
         <a-input-password v-model:value="login.form.password" />
       </a-form-item>
 
-      <a-form-item :wrapper-col="{ offset: 10, span: 4 }" class="text-center">
-        <a-button type="primary" html-type="submit" size="large">登录</a-button>
+      <a-form-item
+        v-if="login.mode === 'register'"
+        label="重复密码"
+        name="repeatPassword"
+        :rules="[{ required: true, message: '重复密码！' }]"
+      >
+        <a-input-password v-model:value="login.form.password" />
+      </a-form-item>
+
+      <FieldItem
+        v-for="mapper in Object.values(stable.usrExtra)"
+        :form="login.form"
+        :skey="mapper.key"
+        :mapper="mapper"
+      />
+
+      <a-form-item :wrapper-col="{ offset: 10, span: 4 }">
+        <a-button type="primary" html-type="submit">登录</a-button>
       </a-form-item>
     </a-form>
   </template>

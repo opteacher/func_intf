@@ -2,13 +2,17 @@ import Mapper, { EdtLstMapper } from '@lib/types/mapper'
 import { gnlCpy } from '@lib/utils'
 import StUser from './stUser'
 import StRcd from './stRecord'
+import { Cond } from '@lib/types'
+import { cloneDeep } from 'lodash'
 
 export default class STable {
   key: string
   name: string
-  form: object
+  form: Object
   edtMod: 'form' | 'direct' // 表单类型
-  usrAuth: boolean // 是否需要用户授权
+  usrAuth: boolean // 是否需要用户权限
+  usrReg: boolean // 允许用户自己注册
+  usrExtra: Mapper
   fkUsers: StUser[]
   fkRecords: StRcd[]
 
@@ -17,7 +21,9 @@ export default class STable {
     this.name = ''
     this.form = {}
     this.edtMod = 'direct' // 默认是直接类型
-    this.usrAuth = false // 默认不需要用户授权
+    this.usrAuth = false // 默认不需要用户权限
+    this.usrReg = false
+    this.usrExtra = new Mapper()
     this.fkUsers = []
     this.fkRecords = []
   }
@@ -28,6 +34,8 @@ export default class STable {
     this.form = {}
     this.edtMod = 'direct' // 默认是直接类型
     this.usrAuth = false
+    this.usrReg = false
+    this.usrExtra = new Mapper()
     this.fkUsers = []
     this.fkRecords = []
   }
@@ -35,7 +43,7 @@ export default class STable {
   static copy(src: any, tgt?: STable, force = false): STable {
     return gnlCpy(STable, src, tgt, {
       force,
-      cpyMapper: { fkUsers: StUser.copy, fkRecords: StRcd.copy }
+      cpyMapper: { fkUsers: StUser.copy, fkRecords: StRcd.copy, usrExtra: cloneDeep }
     })
   }
 }
@@ -48,6 +56,7 @@ export const avaCmpTypes = [
   'Radio',
   'Checkbox',
   'Switch',
+  'DateTime',
   'UploadFile'
 ]
 
@@ -108,7 +117,17 @@ export const extraDict = {
     }
   },
   Select: {
-    options: opnsMapper
+    options: opnsMapper,
+    allowClear: {
+      type: 'Checkbox',
+      label: '可清空选择',
+      chkLabels: ['不可', '可以'],
+      placeholder: '在选择框右侧显示一个清空按钮'
+    },
+    searchable: {
+      type: 'Switch',
+      label: '可搜索选项'
+    }
   },
   Radio: {
     options: opnsMapper,
@@ -142,6 +161,44 @@ export const extraDict = {
       label: '开关标签',
       placeholders: ['关', '开'],
       splitLetter: '/'
+    }
+  },
+  DateTime: {
+    format: {
+      type: 'Select',
+      label: '格式化',
+      options: ['YYYY/MM/DD HH:mm:ss', 'YYYY年MM月DD日 - HH时mm分ss秒'].map(value => ({
+        label: value,
+        value
+      }))
+    },
+    showTime: {
+      type: 'Switch',
+      label: '显示时间'
+    },
+    hourStep: {
+      type: 'Number',
+      label: '小时步进',
+      display: [Cond.create('showTime', '=', true)]
+    },
+    minuteStep: {
+      type: 'Number',
+      label: '分钟步进',
+      display: [Cond.create('showTime', '=', true)]
+    },
+    secondStep: {
+      type: 'Number',
+      label: '秒步进',
+      display: [Cond.create('showTime', '=', true)]
+    },
+    dsbHours: {
+      type: 'EditList',
+      label: '显示小时数',
+      display: [Cond.create('showTime', '=', true)],
+      mapper: new Mapper({ hour: { type: 'Number' } }),
+      inline: true,
+      flatItem: true,
+      newFun: () => ({ hour: 0 })
     }
   },
   UploadFile: {
