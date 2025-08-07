@@ -1,10 +1,18 @@
+import StUser from '@/types/stUser'
 import { defineStore } from 'pinia'
+import api from '@/api'
 
 export const useLoginStore = defineStore('login', {
-  state: () => ({ token: '' }),
+  state: () => ({ user: null as StUser | null }),
   actions: {
     logout() {
-      this.token = ''
+      this.user = null
+    },
+    isLogined() {
+      return this.user != null
+    },
+    async login(user: StUser) {
+      this.user = await api.shareTable.user.login(user)
     }
   }
 })

@@ -26,7 +26,7 @@ import STable from './types/sTable'
 import router from './router'
 import StUser from './types/stUser'
 import StRcd from './types/stRecord'
-import { cloneDeep } from 'lodash'
+import { useLoginStore } from './stores/login'
 
 const gpusHost = '38.155.60.235'
 const appsHost = '38.152.2.152'
@@ -284,14 +284,27 @@ const expIns = {
           { project: 'share-table' }
         )
         return reqDelete('user', stUser.key, { project: 'share-table' })
-      }
+      },
+      register: (stUser: StUser) =>
+        reqPost(`stable/${router.currentRoute.value.query.tid}/user`, stUser, {
+          project: 'share-table',
+          action: 'register',
+          type: 'api'
+        }),
+      login: (stUser: StUser) =>
+        reqPost(`stable/${router.currentRoute.value.query.tid}/user`, stUser, {
+          project: 'share-table',
+          action: 'login',
+          type: 'api',
+          copy: StUser.copy
+        })
     },
     data: {
       all: () =>
         reqGet<STable>('stable', router.currentRoute.value.query.tid, {
           project: 'share-table',
           copy: STable.copy
-        }).then(stbl => stbl.fkRecords.map(rcd => ({ key: rcd.key, ...rcd.raw }))),
+        }).then(stbl => stbl.fkRecords.map(rcd => ({ key: rcd.key, fkUser: rcd.fkUser, ...rcd.raw }))),
       add: async (raw: any) => {
         const newRcd = await reqPost<StRcd>(
           'record',
@@ -302,6 +315,15 @@ const expIns = {
           {
             parent: ['stable', router.currentRoute.value.query.tid],
             child: ['fkRecords', newRcd.key]
+          },
+          true,
+          { project: 'share-table' }
+        )
+        const store = useLoginStore()
+        await reqLink(
+          {
+            parent: ['record', newRcd.key],
+            child: ['fkUser', store.user?.key]
           },
           true,
           { project: 'share-table' }
@@ -325,7 +347,14 @@ const expIns = {
           { project: 'share-table' }
         )
         return reqDelete('record', stRcd.key, { project: 'share-table' })
-      }
+      },
+      count: (uid?: string) =>
+        reqGet(`stable/${router.currentRoute.value.query.tid}/record`, undefined, {
+          project: 'share-table',
+          action: 'count',
+          type: 'api',
+          axiosConfig: { params: { uid } }
+        })
     }
   }
 }

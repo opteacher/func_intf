@@ -173,7 +173,9 @@ const usrExtProps = computed(() =>
   Object.keys(userExtra.mapper).filter(key => !['propForm', 'addProp'].includes(key))
 )
 
-onMounted(async () => {
+onMounted(refresh)
+
+async function refresh() {
   if (!route.query.tid) {
     notification.warn({
       message: '操作错误',
@@ -197,8 +199,7 @@ onMounted(async () => {
       Object.entries(stable.usrExtra).map(([key, val]) => [key, { ...val, disabled: true }])
     )
   )
-})
-
+}
 function onAuthConf(user: StUser) {
   StUser.copy(user, userTable.formState)
   authTable.visible = true
@@ -214,7 +215,7 @@ function resetUserAuth() {
   userTable.formState.reset()
   authTable.formState.reset()
 }
-async function onUsrExtMapperSubmit() {
+async function onUsrExtSubmit() {
   await api.shareTable.stable.update({
     key: stable.key,
     usrExtra: Object.fromEntries(
@@ -222,6 +223,7 @@ async function onUsrExtMapperSubmit() {
     )
   })
   userExtra.emitter.emit('update:visible', false)
+  await refresh()
 }
 </script>
 
@@ -241,6 +243,7 @@ async function onUsrExtMapperSubmit() {
       </a-button>
     </template>
     <template #description>
+      {{ stable.name }}&nbsp;
       <a-button @click="() => userExtra.emitter.emit('update:visible', true)">额外信息</a-button>
     </template>
     <template #operaBefore="{ record }">
@@ -317,7 +320,7 @@ async function onUsrExtMapperSubmit() {
     title="添加额外字段"
     :mapper="userExtra.mapper"
     :emitter="userExtra.emitter"
-    @submit="onUsrExtMapperSubmit"
+    @submit="onUsrExtSubmit"
   >
     <template v-for="prop in usrExtProps" #[`${prop}SFX`]>
       <a-button type="link">

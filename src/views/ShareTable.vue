@@ -53,7 +53,8 @@ const shareTable = reactive({
       type: 'JsonEditor',
       label: '表单结构'
     }
-  })
+  }),
+  selTable: null as STable | null
 })
 const tblDsg = reactive({
   columns: [
@@ -209,13 +210,7 @@ function onGenPlaceholderClick() {
       </a-tag>
     </template>
     <template #form="{ record }: any">
-      <JsonEditor
-        :value="record.form"
-        :disabled="true"
-        :mainMenuBar="false"
-        :navigationBar="false"
-        :statusBar="false"
-      />
+      <a-button @click="() => (shareTable.selTable = record)">查看表单结构</a-button>
     </template>
     <template #formEDT="{ editing }: any">
       <a-form-item-rest>
@@ -392,4 +387,19 @@ function onGenPlaceholderClick() {
       </a-form-item-rest>
     </template>
   </EditableTable>
+  <a-modal
+    :open="shareTable.selTable !== null"
+    title="表单结构"
+    :footer="null"
+    @cancel="() => setProp(shareTable, 'selTable', null)"
+  >
+    <JsonEditor
+      height="60vh"
+      :value="shareTable.selTable?.form || {}"
+      :disabled="true"
+      :mainMenuBar="false"
+      :navigationBar="false"
+      :statusBar="false"
+    />
+  </a-modal>
 </template>
