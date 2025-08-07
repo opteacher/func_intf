@@ -273,7 +273,7 @@ const expIns = {
         )
         return user
       },
-      update: (stUser: StUser) => reqPut('user', stUser.key, stUser, { project: 'share-table' }),
+      update: (stUser: any) => reqPut('user', stUser.key, stUser, { project: 'share-table' }),
       remove: async (stUser: StUser) => {
         await reqLink(
           {
@@ -300,7 +300,7 @@ const expIns = {
         })
     },
     data: {
-      all: () =>
+      all: () => 
         reqGet<STable>('stable', router.currentRoute.value.query.tid, {
           project: 'share-table',
           copy: STable.copy
@@ -320,14 +320,16 @@ const expIns = {
           { project: 'share-table' }
         )
         const store = useLoginStore()
-        await reqLink(
-          {
-            parent: ['record', newRcd.key],
-            child: ['fkUser', store.user?.key]
-          },
-          true,
-          { project: 'share-table' }
-        )
+        if (store.user?.key) {
+          await reqLink(
+            {
+              parent: ['record', newRcd.key],
+              child: ['fkUser', store.user?.key]
+            },
+            true,
+            { project: 'share-table' }
+          )
+        }
         return newRcd
       },
       update: (record: any) =>

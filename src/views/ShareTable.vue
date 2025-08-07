@@ -8,7 +8,12 @@ import { computed, reactive } from 'vue'
 import { compoOpns, cmpNickDict, type CompoType, Cond } from '@lib/types/index'
 import { cloneDeep } from 'lodash'
 import FormGroup from '@lib/components/FormGroup.vue'
-import { DeleteOutlined, UserOutlined, TableOutlined } from '@ant-design/icons-vue'
+import {
+  DeleteOutlined,
+  UserOutlined,
+  TableOutlined,
+  ShareAltOutlined
+} from '@ant-design/icons-vue'
 import api from '@/api'
 import JsonEditor from '@lib/components/JsonEditor.vue'
 import { useRouter } from 'vue-router'
@@ -54,7 +59,8 @@ const shareTable = reactive({
       label: '表单结构'
     }
   }),
-  selTable: null as STable | null
+  selTable: null as STable | null,
+  showShareURL: false
 })
 const tblDsg = reactive({
   columns: [
@@ -86,6 +92,7 @@ const tblDsg = reactive({
 })
 const isNewCol = computed(() => tblDsg.columns.findIndex(col => col.key === 'newCol') !== -1)
 const editKey = computed(() => tblDsg.form.key)
+const baseURL = computed(() => import.meta.env.VITE_BASE_URL)
 
 function onAddColClick() {
   if (!tblDsg.columns.find(col => col.key === 'newCol')) {
@@ -178,6 +185,14 @@ function gotoDataPage(record: STable) {
 function onGenPlaceholderClick() {
   setProp(tblDsg.form, 'placeholder', '输入/选择' + tblDsg.form.label)
 }
+function showShareLink(record: STable) {
+  shareTable.selTable = record
+  shareTable.showShareURL = true
+}
+function onSelTableClose() {
+  shareTable.selTable = null
+  shareTable.showShareURL = false
+}
 </script>
 
 <template>
@@ -192,6 +207,11 @@ function onGenPlaceholderClick() {
     @form-close="onStblFormClose"
   >
     <template #operaBefore="{ record }">
+      <a-button type="primary" size="small" @click="() => showShareLink(record)">
+        <template #icon><ShareAltOutlined /></template>
+        分享表格
+      </a-button>
+      <br />
       <a-button type="text" size="small" @click="() => gotoUserPage(record)">
         <template #icon><UserOutlined /></template>
         管理用户
@@ -389,11 +409,21 @@ function onGenPlaceholderClick() {
   </EditableTable>
   <a-modal
     :open="shareTable.selTable !== null"
-    title="表单结构"
+    :title="shareTable.showShareURL ? '分享表格' : '表单结构'"
     :footer="null"
-    @cancel="() => setProp(shareTable, 'selTable', null)"
+    width="30vw"
+    @cancel="onSelTableClose"
   >
+    <a-typography-link
+      v-if="shareTable.showShareURL"
+      :href="`/#/func_intf/share_table/data?tid=${shareTable.selTable?.key}&fullView=1`"
+      target="_blank"
+      copyable
+    >
+      {{ `${baseURL}/#/func_intf/share_table/data?tid=${shareTable.selTable?.key}&fullView=1` }}
+    </a-typography-link>
     <JsonEditor
+      v-else
       height="60vh"
       :value="shareTable.selTable?.form || {}"
       :disabled="true"

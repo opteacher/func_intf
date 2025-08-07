@@ -25,7 +25,7 @@ export default class StUser {
     this.password = ''
     this.repeatPwd = ''
     this.extra = {}
-    this.auth = new Auth()
+    this.auth.reset()
   }
 
   static copy(src: any, tgt?: StUser, force = false) {

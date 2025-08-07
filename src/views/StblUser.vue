@@ -1,12 +1,12 @@
 <script setup lang="ts">
 import EditableTable from '@lib/components/EditableTable.vue'
 import api from '@/api'
-import { newOne, getProp, setProp } from '@lib/utils'
+import { newOne, getProp } from '@lib/utils'
 import Column from '@lib/types/column'
 import Mapper, { mapTypeTemps } from '@lib/types/mapper'
 import StUser from '@/types/stUser'
 import { computed, onMounted, reactive } from 'vue'
-import Auth, { type AuthInterface } from '@/types/stAuth'
+import { type AuthInterface } from '@/types/stAuth'
 import NumPairLst from '@/components/NumPairLst.vue'
 import { LeftOutlined, MinusCircleOutlined, EditOutlined } from '@ant-design/icons-vue'
 import { useRoute, useRouter } from 'vue-router'
@@ -159,15 +159,14 @@ const authTable = reactive({
       align: 'center'
     }
   ],
-  opers: [{ desc: '可否操作' }, { desc: '操作对象' }],
-  formState: new Auth()
+  opers: [{ desc: '可否操作' }, { desc: '操作对象' }]
 })
 type OperType = keyof AuthInterface
 const operDict = {
   add: ['addable'],
-  delete: ['deletable', 'delOnlyOwn'],
-  update: ['updatable', 'updOnlyOwn'],
-  query: ['queriable', 'qryOnlyOwn']
+  delete: ['deletable', 'delOnlyOwn', '删除'],
+  update: ['updatable', 'updOnlyOwn', '编辑'],
+  query: ['queriable', 'qryOnlyOwn', '查询']
 }
 const usrExtProps = computed(() =>
   Object.keys(userExtra.mapper).filter(key => !['propForm', 'addProp'].includes(key))
@@ -184,7 +183,7 @@ async function refresh() {
     router.replace('/func_intf/share_table/table')
   }
   STable.copy(await api.shareTable.stable.get(route.query.tid as string), stable, true)
-  userTable.columns = userTable.columns.concat(
+  userTable.columns = [new Column('登录标识', 'lgnIden')].concat(
     Object.values(stable.usrExtra).map(
       mapper => new Column(mapper.label, 'extra.' + mapper.key, { key: 'extra.item.' + mapper.key })
     )
@@ -199,21 +198,20 @@ async function refresh() {
       Object.entries(stable.usrExtra).map(([key, val]) => [key, { ...val, disabled: true }])
     )
   )
+  userTable.emitter.emit('refresh')
 }
 function onAuthConf(user: StUser) {
-  StUser.copy(user, userTable.formState)
+  StUser.copy(user, userTable.formState, true)
   authTable.visible = true
-  Auth.copy(user.auth, authTable.formState)
 }
 async function onAuthSubmit() {
-  Auth.copy(authTable.formState, userTable.formState.auth)
   await api.shareTable.user.update(userTable.formState)
   resetUserAuth()
+  await refresh()
 }
 function resetUserAuth() {
   authTable.visible = false
   userTable.formState.reset()
-  authTable.formState.reset()
 }
 async function onUsrExtSubmit() {
   await api.shareTable.stable.update({
@@ -260,16 +258,16 @@ async function onUsrExtSubmit() {
       <template #bodyCell="{ record, column }">
         <a-space v-if="record.desc === '可否操作' && column.dataIndex !== 'desc'">
           <a-switch
-            v-model:checked="authTable.formState[getProp(operDict, column.dataIndex + '[0]') as OperType]"
+            v-model:checked="userTable.formState.auth[getProp(operDict, column.dataIndex + '[0]') as OperType]"
             checked-children="可"
             un-checked-children="否"
           />
           <a-checkbox
             v-if="['delete', 'update', 'query'].includes(column.dataIndex)"
-            v-model:checked="authTable.formState[getProp(operDict, column.dataIndex + '[1]') as OperType]"
-            :disabled="!authTable.formState[getProp(operDict, column.dataIndex + '[0]') as OperType]"
+            v-model:checked="userTable.formState.auth[getProp(operDict, column.dataIndex + '[1]') as OperType]"
+            :disabled="!userTable.formState.auth[getProp(operDict, column.dataIndex + '[0]') as OperType]"
           >
-            只可操作自己创建的记录
+            只可{{ getProp(operDict, column.dataIndex + '[2]') }}自己创建的记录
           </a-checkbox>
         </a-space>
         <a-form v-else-if="record.desc === '操作对象'" layout="vertical">
@@ -280,10 +278,10 @@ async function onUsrExtSubmit() {
           </a-form-item>
           <a-form-item v-if="column.dataIndex === 'add'" label="可添加的记录数">
             <a-input
-              :disabled="!authTable.formState.addable"
+              :disabled="!userTable.formState.auth.addable"
               type="number"
               placeholder="记录数"
-              v-model:value="authTable.formState.canAddNum"
+              v-model:value="userTable.formState.auth.canAddNum"
             />
           </a-form-item>
           <a-form-item v-else-if="column.dataIndex === 'delete'">
@@ -292,22 +290,22 @@ async function onUsrExtSubmit() {
               <a-typography-text type="secondary">结束行不填代表指定行</a-typography-text>
             </template>
             <NumPairLst
-              v-model:num-pair-list="authTable.formState.canDelRows"
-              :disabled="!authTable.formState.deletable || authTable.formState.delOnlyOwn"
+              v-model:num-pair-list="userTable.formState.auth.canDelRows"
+              :disabled="!userTable.formState.auth.deletable || userTable.formState.auth.delOnlyOwn"
             />
           </a-form-item>
           <a-form-item v-else-if="column.dataIndex === 'update'" label="可修改的行/单元格">
             <NumPairLst
-              v-model:num-pair-list="authTable.formState.canUpdRowCells"
-              :disabled="!authTable.formState.updatable || authTable.formState.updOnlyOwn"
+              v-model:num-pair-list="userTable.formState.auth.canUpdRowCells"
+              :disabled="!userTable.formState.auth.updatable || userTable.formState.auth.updOnlyOwn"
               :placeholder="['行号', '列号']"
               split-letter="/"
             />
           </a-form-item>
           <a-form-item v-else-if="column.dataIndex === 'query'" label="可修改的行/单元格">
             <NumPairLst
-              v-model:num-pair-list="authTable.formState.canQryRowCells"
-              :disabled="!authTable.formState.queriable || authTable.formState.qryOnlyOwn"
+              v-model:num-pair-list="userTable.formState.auth.canQryRowCells"
+              :disabled="!userTable.formState.auth.queriable || userTable.formState.auth.qryOnlyOwn"
               :placeholder="['行号', '列号']"
               split-letter="/"
             />

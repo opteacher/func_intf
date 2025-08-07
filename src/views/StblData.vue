@@ -34,6 +34,7 @@ const usrAddable = computed(
     lgnUsr.value?.auth.addable &&
     (lgnUsr.value?.auth.canAddNum === '*' || count.value < lgnUsr.value?.auth.canAddNum)
 )
+const rcdKeysByLgnUsr = reactive<string[]>([])
 
 onMounted(async () => {
   if (!route.query.tid) {
@@ -43,6 +44,10 @@ onMounted(async () => {
     })
     router.replace('/func_intf/share_table/table')
   }
+  await refresh()
+})
+
+async function refresh() {
   STable.copy(await api.shareTable.stable.get(route.query.tid as string), stable)
   login.form.extra = newObjByMapper(stable.usrExtra)
   columns.splice(
@@ -50,11 +55,15 @@ onMounted(async () => {
     columns.length,
     ...Object.entries(stable.form).map(([key, value]) => new Column(value.label, key))
   )
-  emitter.emit('refresh')
   mapper.value = new Mapper(stable.form)
   emitter.emit('update:mapper', mapper.value)
-})
-
+  count.value = await api.shareTable.data.count(lgnUsr.value?.key)
+  rcdKeysByLgnUsr.splice(
+    0,
+    rcdKeysByLgnUsr.length,
+    ...stable.fkRecords.filter(rcd => rcd.fkUser === store.user?.key).map(rcd => rcd.key)
+  )
+}
 async function onSubmit() {
   try {
     switch (login.mode) {
@@ -64,11 +73,15 @@ async function onSubmit() {
         break
       case 'login':
         await store.login(login.form)
-        await onLogined()
+        login.form.reset()
+        emitter.emit('refresh')
         break
     }
-  } catch (e) {
-    console.error(e)
+  } catch (e: any) {
+    notification.error({
+      message: '请求失败',
+      description: e.response.data
+    })
   }
 }
 function validRepPwdIsSame() {
@@ -83,7 +96,8 @@ function validRepPwdIsSame() {
 async function onDirectLogin() {
   await store.login(pickOrIgnore(login.form, ['lgnIden', 'password'], false))
   login.regSucceed = false
-  await onLogined()
+  login.form.reset()
+  emitter.emit('refresh')
 }
 function onBackToReg() {
   login.regSucceed = false
@@ -93,9 +107,14 @@ function onBackToReg() {
 function onFieldUpdate(vals: any) {
   Object.entries(vals).map(([key, val]) => setProp(login.form.extra, key, val))
 }
-async function onLogined() {
-  login.form.reset()
-  count.value = await api.shareTable.data.count(lgnUsr.value?.key)
+function filterDataByAuth(record: any) {
+  if (!stable.usrAuth) {
+    return true
+  }
+  if (!lgnUsr.value?.auth.queriable) {
+    return false
+  }
+  return lgnUsr.value?.auth.qryOnlyOwn ? record.fkUser === store.user?.key : true
 }
 </script>
 
@@ -184,16 +203,20 @@ async function onLogined() {
   </div>
   <EditableTable
     v-else
+    :ref-opns="['manual', 'auto']"
     :edit-mode="stable.edtMod"
     :emitter="emitter"
     :api="api.shareTable.data"
+    :filter="filterDataByAuth"
     :mapper="mapper"
     :columns="columns"
     :addable="usrAddable"
     :editable="lgnUsr?.auth.updatable"
+    :edtable-keys="lgnUsr?.auth.updOnlyOwn ? rcdKeysByLgnUsr : []"
     :delable="lgnUsr?.auth.deletable"
+    :delable-keys="lgnUsr?.auth.delOnlyOwn ? rcdKeysByLgnUsr : []"
     :new-fun="() => newObjByMapper(mapper)"
-    @refresh="onLogined"
+    @refresh="refresh"
   >
     <template #title>
       <a-button type="text" @click="() => router.back()">
