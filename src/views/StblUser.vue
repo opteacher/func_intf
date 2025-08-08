@@ -1,14 +1,20 @@
 <script setup lang="ts">
 import EditableTable from '@lib/components/EditableTable.vue'
 import api from '@/api'
-import { newOne, getProp } from '@lib/utils'
+import { newOne, getProp, pickOrIgnore } from '@lib/utils'
 import Column from '@lib/types/column'
 import Mapper, { mapTypeTemps } from '@lib/types/mapper'
 import StUser from '@/types/stUser'
 import { computed, onMounted, reactive } from 'vue'
-import { type AuthInterface } from '@/types/stAuth'
+import Auth, { type AuthInterface } from '@/types/stAuth'
 import NumPairLst from '@/components/NumPairLst.vue'
-import { LeftOutlined, MinusCircleOutlined, EditOutlined } from '@ant-design/icons-vue'
+import {
+  LeftOutlined,
+  MinusCircleOutlined,
+  EditOutlined,
+  AppstoreAddOutlined,
+  SafetyOutlined
+} from '@ant-design/icons-vue'
 import { useRoute, useRouter } from 'vue-router'
 import { notification } from 'ant-design-vue'
 import { TinyEmitter } from 'tiny-emitter'
@@ -205,7 +211,11 @@ function onAuthConf(user: StUser) {
   authTable.visible = true
 }
 async function onAuthSubmit() {
-  await api.shareTable.user.update(userTable.formState)
+  if (!userTable.formState.key) {
+    await api.shareTable.stable.update({ key: route.query.tid, tempAuth: userTable.formState.auth })
+  } else {
+    await api.shareTable.user.update(pickOrIgnore(userTable.formState, ['key', 'auth'], false))
+  }
   resetUserAuth()
   await refresh()
 }
@@ -222,6 +232,10 @@ async function onUsrExtSubmit() {
   })
   userExtra.emitter.emit('update:visible', false)
   await refresh()
+}
+function onTempAuthClick() {
+  Auth.copy(stable.tempAuth, userTable.formState.auth)
+  authTable.visible = true
 }
 </script>
 
@@ -241,8 +255,17 @@ async function onUsrExtSubmit() {
       </a-button>
     </template>
     <template #description>
-      {{ stable.name }}&nbsp;
-      <a-button @click="() => userExtra.emitter.emit('update:visible', true)">额外信息</a-button>
+      <a-space align="center">
+        <a-typography-title class="mb-0" :level="4">{{ stable.name }}</a-typography-title>
+        <a-button @click="() => userExtra.emitter.emit('update:visible', true)">
+          <template #icon><AppstoreAddOutlined /></template>
+          额外信息
+        </a-button>
+        <a-button @click="onTempAuthClick">
+          <template #icon><SafetyOutlined /></template>
+          模板权限
+        </a-button>
+      </a-space>
     </template>
     <template #operaBefore="{ record }">
       <a-button type="link" size="small" @click="() => onAuthConf(record)">配置权限</a-button>

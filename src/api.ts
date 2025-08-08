@@ -27,6 +27,7 @@ import router from './router'
 import StUser from './types/stUser'
 import StRcd from './types/stRecord'
 import { useLoginStore } from './stores/login'
+import Auth from '@/types/stAuth'
 
 const gpusHost = '38.155.60.235'
 const appsHost = '38.152.2.152'
@@ -253,7 +254,8 @@ const expIns = {
       get: (tid: string) =>
         reqGet<STable>('stable', tid, { project: 'share-table', copy: STable.copy }),
       update: (stable: any) => reqPut('stable', stable.key, stable, { project: 'share-table' }),
-      remove: (stable: STable) => reqDelete('stable', stable.key, { project: 'share-table' })
+      remove: (stable: STable) =>
+        reqDelete('stable', stable.key, { project: 'share-table', type: 'api' })
     },
     user: {
       all: () =>
@@ -261,17 +263,27 @@ const expIns = {
           project: 'share-table',
           copy: STable.copy
         }).then(stbl => stbl.fkUsers),
-      add: async (stUser: StUser) => {
-        const user = await reqPost('user', stUser, { project: 'share-table', copy: StUser.copy })
-        await reqLink(
+      add: async (stUser: StUser, auth?: Auth) => {
+        const tid = router.currentRoute.value.query.tid
+        let tempAuth = auth
+        if (!tempAuth) {
+          tempAuth = await expIns.shareTable.stable
+            .get(tid as string)
+            .then(stable => stable.tempAuth)
+        }
+        return reqPost(
+          `stable/${tid}/user`,
           {
-            parent: ['stable', router.currentRoute.value.query.tid],
-            child: ['fkUsers', user.key]
+            ...pickOrIgnore(stUser, ['auth']),
+            auth: tempAuth
           },
-          true,
-          { project: 'share-table' }
+          {
+            type: 'api',
+            action: 'register',
+            project: 'share-table',
+            copy: StUser.copy
+          }
         )
-        return user
       },
       update: (stUser: any) => reqPut('user', stUser.key, stUser, { project: 'share-table' }),
       remove: async (stUser: StUser) => {
@@ -285,12 +297,6 @@ const expIns = {
         )
         return reqDelete('user', stUser.key, { project: 'share-table' })
       },
-      register: (stUser: StUser) =>
-        reqPost(`stable/${router.currentRoute.value.query.tid}/user`, stUser, {
-          project: 'share-table',
-          action: 'register',
-          type: 'api'
-        }),
       login: (stUser: StUser) =>
         reqPost(`stable/${router.currentRoute.value.query.tid}/user`, stUser, {
           project: 'share-table',
@@ -300,11 +306,13 @@ const expIns = {
         })
     },
     data: {
-      all: () => 
+      all: () =>
         reqGet<STable>('stable', router.currentRoute.value.query.tid, {
           project: 'share-table',
           copy: STable.copy
-        }).then(stbl => stbl.fkRecords.map(rcd => ({ key: rcd.key, fkUser: rcd.fkUser, ...rcd.raw }))),
+        }).then(stbl =>
+          stbl.fkRecords.map(rcd => ({ key: rcd.key, fkUser: rcd.fkUser, ...rcd.raw }))
+        ),
       add: async (raw: any) => {
         const newRcd = await reqPost<StRcd>(
           'record',

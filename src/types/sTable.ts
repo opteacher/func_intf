@@ -4,6 +4,7 @@ import StUser from './stUser'
 import StRcd from './stRecord'
 import { Cond } from '@lib/types'
 import { cloneDeep } from 'lodash'
+import Auth from './stAuth'
 
 export default class STable {
   key: string
@@ -13,6 +14,7 @@ export default class STable {
   usrAuth: boolean // 是否需要用户权限
   usrReg: boolean // 允许用户自己注册
   usrExtra: Mapper
+  tempAuth: Auth
   fkUsers: StUser[]
   fkRecords: StRcd[]
 
@@ -24,6 +26,7 @@ export default class STable {
     this.usrAuth = false // 默认不需要用户权限
     this.usrReg = false
     this.usrExtra = new Mapper()
+    this.tempAuth = new Auth()
     this.fkUsers = []
     this.fkRecords = []
   }
@@ -36,6 +39,7 @@ export default class STable {
     this.usrAuth = false
     this.usrReg = false
     this.usrExtra = new Mapper()
+    this.tempAuth = new Auth()
     this.fkUsers = []
     this.fkRecords = []
   }
@@ -43,7 +47,12 @@ export default class STable {
   static copy(src: any, tgt?: STable, force = false): STable {
     return gnlCpy(STable, src, tgt, {
       force,
-      cpyMapper: { fkUsers: StUser.copy, fkRecords: StRcd.copy, usrExtra: cloneDeep }
+      cpyMapper: {
+        fkUsers: StUser.copy,
+        fkRecords: StRcd.copy,
+        usrExtra: cloneDeep,
+        tempAuth: Auth.copy
+      }
     })
   }
 }
@@ -165,12 +174,13 @@ export const extraDict = {
   },
   DateTime: {
     format: {
-      type: 'Select',
+      type: 'SelOrIpt',
       label: '格式化',
       options: ['YYYY/MM/DD HH:mm:ss', 'YYYY年MM月DD日 - HH时mm分ss秒'].map(value => ({
         label: value,
         value
-      }))
+      })),
+      mode: 'select'
     },
     showTime: {
       type: 'Switch',

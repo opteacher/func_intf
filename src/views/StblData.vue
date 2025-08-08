@@ -68,7 +68,7 @@ async function onSubmit() {
   try {
     switch (login.mode) {
       case 'register':
-        await api.shareTable.user.register(login.form)
+        await api.shareTable.user.add(login.form, stable.tempAuth)
         login.regSucceed = true
         break
       case 'login':
@@ -219,7 +219,8 @@ function filterDataByAuth(record: any) {
     @refresh="refresh"
   >
     <template #title>
-      <a-button type="text" @click="() => router.back()">
+      <template v-if="route.query.fullView">共享表格</template>
+      <a-button v-else type="text" @click="() => router.back()">
         <template #icon><LeftOutlined /></template>
         数据管理
       </a-button>
@@ -227,7 +228,7 @@ function filterDataByAuth(record: any) {
     <template #description>
       {{ stable.name }}
     </template>
-    <template #extra>
+    <template v-if="stable.usrAuth" #extra>
       <a-button type="text">
         <template #icon><UserOutlined /></template>
         {{ lgnUsr?.lgnIden }}
