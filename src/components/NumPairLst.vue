@@ -2,7 +2,11 @@
 import { reactive, type PropType } from 'vue'
 import { type NumOrAll } from '../types/stAuth'
 import { cloneDeep } from 'lodash'
+import { DownOutlined } from '@ant-design/icons-vue'
+import { useRoute, useRouter } from 'vue-router'
 
+const route = useRoute()
+const router = useRouter()
 const props = defineProps({
   numPairList: { type: Array as unknown as PropType<Array<[NumOrAll, NumOrAll]>>, required: true },
   placeholder: {
@@ -30,6 +34,19 @@ function onAllSelClick() {
 function onCtrlNumOnly(i: number) {
   formState[i] = formState[i].replace(/(\D+|^\*)/g, '')
 }
+function onDropDownClick({ key }: { key: 'all' | 'pick' }) {
+  switch (key) {
+    case 'all':
+      onAllSelClick()
+      break
+    case 'pick':
+      router.push({
+        path: '/func_intf/share_table/data',
+        query: { pickMode: 1, tid: route.query.tid }
+      })
+      break
+  }
+}
 </script>
 
 <template>
@@ -55,8 +72,16 @@ function onCtrlNumOnly(i: number) {
       v-model:value="formState[1]"
       @change="() => onCtrlNumOnly(1)"
     />
-    <a-button :disabled="disabled" @click="onAllSelClick">全选</a-button>
-    <a-button type="primary" :disabled="disabled" @click="onAddClick">添加</a-button>
+    <a-dropdown-button class="num-pair-add-btn" :disabled="disabled" @click="onAddClick">
+      添加
+      <template #overlay>
+        <a-menu @click="onDropDownClick">
+          <a-menu-item key="all">全选</a-menu-item>
+          <a-menu-item key="pick">选择</a-menu-item>
+        </a-menu>
+      </template>
+      <template #icon><DownOutlined /></template>
+    </a-dropdown-button>
   </a-input-group>
   <a-list v-if="numPairList.length && !disabled" size="small" :data-source="numPairList">
     <template #renderItem="{ item, index }">
@@ -69,3 +94,10 @@ function onCtrlNumOnly(i: number) {
     </template>
   </a-list>
 </template>
+
+<style>
+.num-pair-add-btn button:first-child {
+  border-start-start-radius: 0px !important;
+  border-end-start-radius: 0px !important;
+}
+</style>

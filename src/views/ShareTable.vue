@@ -199,6 +199,7 @@ function onSelTableClose() {
   <EditableTable
     title="共享表格"
     dlg-width="100vw"
+    :icon="TableOutlined"
     :api="shareTable.api"
     :columns="shareTable.columns"
     :mapper="shareTable.mapper"

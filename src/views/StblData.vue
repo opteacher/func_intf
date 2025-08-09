@@ -7,7 +7,7 @@ import api from '@/api'
 import Column from '@lib/types/column'
 import { TinyEmitter } from 'tiny-emitter'
 import Mapper, { newObjByMapper } from '@lib/types/mapper'
-import { LeftOutlined, LogoutOutlined, UserOutlined } from '@ant-design/icons-vue'
+import { LogoutOutlined, UserOutlined, DatabaseOutlined } from '@ant-design/icons-vue'
 import STable from '@/types/sTable'
 import StUser from '@/types/stUser'
 import { pickOrIgnore, setProp } from '@lib/utils'
@@ -31,9 +31,12 @@ const { user: lgnUsr } = storeToRefs(store)
 const count = ref(0)
 const usrAddable = computed(
   () =>
+    !route.query.pickMode &&
     lgnUsr.value?.auth.addable &&
     (lgnUsr.value?.auth.canAddNum === '*' || count.value < lgnUsr.value?.auth.canAddNum)
 )
+const usrEdtable = computed(() => !route.query.pickMode && lgnUsr.value?.auth.updatable)
+const usrDelable = computed(() => !route.query.pickMode && lgnUsr.value?.auth.deletable)
 const rcdKeysByLgnUsr = reactive<string[]>([])
 
 onMounted(async () => {
@@ -108,7 +111,7 @@ function onFieldUpdate(vals: any) {
   Object.entries(vals).map(([key, val]) => setProp(login.form.extra, key, val))
 }
 function filterDataByAuth(record: any) {
-  if (!stable.usrAuth) {
+  if (!stable.usrAuth || route.query.pickMode) {
     return true
   }
   if (!lgnUsr.value?.auth.queriable) {
@@ -119,7 +122,10 @@ function filterDataByAuth(record: any) {
 </script>
 
 <template>
-  <div v-if="stable.usrAuth && !store.isLogined()" class="relative w-full h-full">
+  <div
+    v-if="!route.query.pickMode && stable.usrAuth && !store.isLogined()"
+    class="relative w-full h-full"
+  >
     <a-form
       class="w-full absolute top-1/3 left-1/2"
       style="transform: translateX(-50%) translateY(-50%)"
@@ -130,7 +136,9 @@ function filterDataByAuth(record: any) {
       @finish="onSubmit"
     >
       <a-form-item :wrapper-col="{ offset: 10 }">
-        <a-typography-title class="mb-0" :level="3">共享表格</a-typography-title>
+        <a-typography-title class="mb-0" :level="3">
+          <a href="/#/func_intf/share_table/table">共享表格</a>
+        </a-typography-title>
       </a-form-item>
 
       <a-form-item v-if="stable.usrReg" :wrapper-col="{ offset: 10 }">
@@ -203,6 +211,8 @@ function filterDataByAuth(record: any) {
   </div>
   <EditableTable
     v-else
+    :title="stable.name"
+    :icon="DatabaseOutlined"
     :ref-opns="['manual', 'auto']"
     :edit-mode="stable.edtMod"
     :emitter="emitter"
@@ -211,24 +221,29 @@ function filterDataByAuth(record: any) {
     :mapper="mapper"
     :columns="columns"
     :addable="usrAddable"
-    :editable="lgnUsr?.auth.updatable"
+    :editable="usrEdtable"
     :edtable-keys="lgnUsr?.auth.updOnlyOwn ? rcdKeysByLgnUsr : []"
-    :delable="lgnUsr?.auth.deletable"
+    :delable="usrDelable"
     :delable-keys="lgnUsr?.auth.delOnlyOwn ? rcdKeysByLgnUsr : []"
     :new-fun="() => newObjByMapper(mapper)"
     @refresh="refresh"
   >
-    <template #title>
-      <template v-if="route.query.fullView">共享表格</template>
-      <a-button v-else type="text" @click="() => router.back()">
-        <template #icon><LeftOutlined /></template>
-        数据管理
-      </a-button>
-    </template>
     <template #description>
-      {{ stable.name }}
+      <a-breadcrumb class="inline-block">
+        <a-breadcrumb-item><a href="/#/func_intf/share_table/table">共享表格</a></a-breadcrumb-item>
+        <a-breadcrumb-item>
+          数据表浏览
+          <template #overlay>
+            <a-menu>
+              <a-menu-item>
+                <a :href="`/#/func_intf/share_table/user?tid=${route.query.tid}`">成员管理</a>
+              </a-menu-item>
+            </a-menu>
+          </template>
+        </a-breadcrumb-item>
+      </a-breadcrumb>
     </template>
-    <template v-if="stable.usrAuth" #extra>
+    <template v-if="stable.usrAuth && !route.query.pickMode" #extra>
       <a-button type="text">
         <template #icon><UserOutlined /></template>
         {{ lgnUsr?.lgnIden }}
@@ -239,9 +254,6 @@ function filterDataByAuth(record: any) {
           <template #icon><LogoutOutlined /></template>
         </a-button>
       </a-tooltip>
-    </template>
-    <template #operaBefore="{ record }">
-      {{ record.fkUser }}
     </template>
   </EditableTable>
 </template>

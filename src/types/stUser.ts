@@ -29,6 +29,6 @@ export default class StUser {
   }
 
   static copy(src: any, tgt?: StUser, force = false) {
-    return gnlCpy(StUser, src, tgt, { force, cpyMapper: { auth: Auth.copy, propForm: cloneDeep } })
+    return gnlCpy(StUser, src, tgt, { force, cpyMapper: { auth: Auth.copy } })
   }
 }
