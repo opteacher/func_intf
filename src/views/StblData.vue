@@ -14,6 +14,7 @@ import { pickOrIgnore, setProp } from '@lib/utils'
 import FormGroup from '@lib/components/FormGroup.vue'
 import { useLoginStore } from '@/stores/login'
 import { storeToRefs } from 'pinia'
+import type StRcd from '@/types/stRecord'
 
 const route = useRoute()
 const router = useRouter()
@@ -64,7 +65,9 @@ async function refresh() {
   rcdKeysByLgnUsr.splice(
     0,
     rcdKeysByLgnUsr.length,
-    ...stable.fkRecords.filter(rcd => rcd.fkUser === store.user?.key).map(rcd => rcd.key)
+    ...(stable.fkRecords as StRcd[])
+      .filter(rcd => rcd.fkUser === store.user?.key)
+      .map(rcd => rcd.key)
   )
 }
 async function onSubmit() {

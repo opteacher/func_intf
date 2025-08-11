@@ -10,18 +10,20 @@ export default class STable {
   key: string
   name: string
   form: Object
+  path: string[]
   edtMod: 'form' | 'direct' // 表单类型
   usrAuth: boolean // 是否需要用户权限
   usrReg: boolean // 允许用户自己注册
   usrExtra: Mapper
   tempAuth: Auth
-  fkUsers: StUser[]
-  fkRecords: StRcd[]
+  fkUsers: (StUser | string)[]
+  fkRecords: (StRcd | string)[]
 
   constructor() {
     this.key = ''
     this.name = ''
     this.form = {}
+    this.path = []
     this.edtMod = 'direct' // 默认是直接类型
     this.usrAuth = false // 默认不需要用户权限
     this.usrReg = false
@@ -35,6 +37,7 @@ export default class STable {
     this.key = ''
     this.name = ''
     this.form = {}
+    this.path = []
     this.edtMod = 'direct' // 默认是直接类型
     this.usrAuth = false
     this.usrReg = false
@@ -45,15 +48,31 @@ export default class STable {
   }
 
   static copy(src: any, tgt?: STable, force = false): STable {
-    return gnlCpy(STable, src, tgt, {
+    tgt = gnlCpy(STable, src, tgt, {
       force,
       cpyMapper: {
-        fkUsers: StUser.copy,
-        fkRecords: StRcd.copy,
         usrExtra: cloneDeep,
         tempAuth: Auth.copy
-      }
+      },
+      ignProps: ['fkUsers', 'fkRecords']
     })
+    if (src.fkUsers && src.fkUsers.length) {
+      tgt.fkUsers =
+        typeof src.fkUsers[0] === 'string'
+          ? [...src.fkUsers]
+          : src.fkUsers.map((usr: any) => StUser.copy(usr))
+    } else if (force) {
+      ;(tgt as STable).fkUsers = []
+    }
+    if (src.fkRecords && src.fkRecords.length) {
+      tgt.fkRecords =
+        typeof src.fkRecords[0] === 'string'
+          ? [...src.fkRecords]
+          : src.fkRecords.map((usr: any) => StRcd.copy(usr))
+    } else if (force) {
+      ;(tgt as STable).fkRecords = []
+    }
+    return tgt as STable
   }
 }
 

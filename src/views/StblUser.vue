@@ -14,7 +14,8 @@ import {
   EditOutlined,
   AppstoreAddOutlined,
   SafetyOutlined,
-  MoreOutlined
+  MoreOutlined,
+  InfoCircleOutlined
 } from '@ant-design/icons-vue'
 import { useRoute, useRouter } from 'vue-router'
 import { notification } from 'ant-design-vue'
@@ -23,6 +24,7 @@ import { compoOpns } from '@lib/types'
 import STable, { avaCmpTypes, extraDict } from '@/types/sTable'
 import FormDialog from '@lib/components/FormDialog.vue'
 import { cloneDeep, difference } from 'lodash'
+import { Tag as ATag } from 'ant-design-vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -301,6 +303,12 @@ function onUsrExtCancel(visible: boolean) {
     :emitter="userTable.emitter"
     :new-fun="() => newOne(StUser)"
   >
+    <template #tags>
+      <a-tag color="#2db7f5">
+        <template #icon><InfoCircleOutlined /></template>
+        使用引导
+      </a-tag>
+    </template>
     <template #description>
       <a-breadcrumb class="inline-block">
         <a-breadcrumb-item><a href="/#/func_intf/share_table/table">共享表格</a></a-breadcrumb-item>

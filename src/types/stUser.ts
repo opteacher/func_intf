@@ -1,6 +1,5 @@
 import { gnlCpy } from '@lib/utils'
 import Auth from './stAuth'
-import { cloneDeep } from 'lodash'
 
 export default class StUser {
   key: string

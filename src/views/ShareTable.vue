@@ -4,7 +4,7 @@ import Column from '@lib/types/column'
 import Mapper from '@lib/types/mapper'
 import { newOne, setProp, getProp } from '@lib/utils'
 import STable, { avaCmpTypes, extraDict } from '@/types/sTable'
-import { computed, reactive } from 'vue'
+import { computed, nextTick, reactive, ref } from 'vue'
 import { compoOpns, cmpNickDict, type CompoType, Cond } from '@lib/types/index'
 import { cloneDeep } from 'lodash'
 import FormGroup from '@lib/components/FormGroup.vue'
@@ -12,17 +12,23 @@ import {
   DeleteOutlined,
   UserOutlined,
   TableOutlined,
-  ShareAltOutlined
+  ShareAltOutlined,
+  InfoCircleOutlined
 } from '@ant-design/icons-vue'
 import api from '@/api'
 import JsonEditor from '@lib/components/JsonEditor.vue'
 import { useRouter } from 'vue-router'
+import { TinyEmitter } from 'tiny-emitter'
+import type { TourProps } from 'ant-design-vue'
 
 const router = useRouter()
+const stblRef = ref<any>(null)
 const shareTable = reactive({
+  emitter: new TinyEmitter(),
   api: api.shareTable.stable,
   columns: [
     new Column('名称', 'name'),
+    new Column('存储目录', 'path'),
     new Column('表单类型', 'edtMod'),
     new Column('用户授权', 'usrAuth'),
     new Column('用户注册', 'usrReg'),
@@ -33,6 +39,10 @@ const shareTable = reactive({
       type: 'Input',
       label: '表格名称',
       rules: [{ required: true, message: '请输入表格名称' }]
+    },
+    path: {
+      type: 'Cascader',
+      label: '存储目录'
     },
     edtMod: {
       type: 'Radio',
@@ -60,7 +70,12 @@ const shareTable = reactive({
     }
   }),
   selTable: null as STable | null,
-  showShareURL: false
+  showShareURL: false,
+  createDir: {
+    visible: false,
+    value: ''
+  },
+  tourSteps: [] as TourProps['steps']
 })
 const tblDsg = reactive({
   columns: [
@@ -193,10 +208,45 @@ function onSelTableClose() {
   shareTable.selTable = null
   shareTable.showShareURL = false
 }
+function onAddPathClick() {
+  if (shareTable.createDir.visible) {
+    shareTable.emitter.emit('update:mprop', {
+      'path.options': [
+        {
+          label: shareTable.createDir.value,
+          value: shareTable.createDir.value
+        }
+      ]
+    })
+    shareTable.createDir.visible = false
+  } else {
+    shareTable.createDir.visible = true
+  }
+}
+function onAferRefresh() {
+  if (!shareTable.tourSteps?.length) {
+    shareTable.tourSteps = [
+      {
+        title: '创建共享表格结构',
+        description: '点击添加按钮创建表格',
+        target: () => stblRef.value.addBtnRef && stblRef.value.addBtnRef.$el,
+        nextButtonProps: {
+          onClick: () => {
+            shareTable.emitter.emit('update:visible', true)
+            nextTick(() => {
+              console.log(stblRef.value)
+            })
+          }
+        }
+      }
+    ]
+  }
+}
 </script>
 
 <template>
   <EditableTable
+    ref="stblRef"
     title="共享表格"
     dlg-width="100vw"
     :icon="TableOutlined"
@@ -204,9 +254,52 @@ function onSelTableClose() {
     :columns="shareTable.columns"
     :mapper="shareTable.mapper"
     :new-fun="() => newOne(STable)"
+    :emitter="shareTable.emitter"
+    :tour-steps="shareTable.tourSteps"
+    @refresh="onAferRefresh"
     @edit="onSTableEdit"
     @form-close="onStblFormClose"
   >
+    <template #tags>
+      <a-tag
+        class="hover:cursor-pointer hover:bg-[#2db7f5cd]"
+        color="#2db7f5"
+        @click="() => shareTable.emitter.emit('update:tour', true)"
+      >
+        <template #icon><InfoCircleOutlined /></template>
+        使用引导
+      </a-tag>
+    </template>
+    <template #path="{ record }: any">
+      {{ record.path && record.path.length ? record.path.join(' / ') : '根目录' }}
+    </template>
+    <template #pathEDT="{ editing, mapper }: any">
+      <div class="flex space-x-2">
+        <a-cascader
+          class="flex-[3]"
+          :options="mapper.options"
+          :placeholder="mapper.placeholder || '请选择'"
+          :value="editing.path"
+          change-on-select
+          @change="(newVal: any) => (editing.path = newVal)"
+        />
+        <a-input
+          v-if="shareTable.createDir.visible"
+          class="flex-1"
+          placeholder="输入创建的目录"
+          v-model:value="shareTable.createDir.value"
+        />
+        <a-button type="primary" :ghost="!shareTable.createDir.visible" @click="onAddPathClick">
+          创建目录
+        </a-button>
+        <a-button
+          v-if="shareTable.createDir.visible"
+          @click="() => (shareTable.createDir.visible = false)"
+        >
+          取消
+        </a-button>
+      </div>
+    </template>
     <template #operaBefore="{ record }">
       <a-button type="primary" size="small" @click="() => showShareLink(record)">
         <template #icon><ShareAltOutlined /></template>
