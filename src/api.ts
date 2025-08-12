@@ -249,7 +249,7 @@ const expIns = {
   },
   shareTable: {
     stable: {
-      all: () => reqAll('stable', { project: 'share-table', copy: STable.copy }),
+      all: () => reqAll<STable>('stable', { project: 'share-table', copy: STable.copy }),
       add: (stable: STable) => reqPost('stable', stable, { project: 'share-table' }),
       get: (tid: string) =>
         reqGet<STable>('stable', tid, { project: 'share-table', copy: STable.copy }),
@@ -305,13 +305,13 @@ const expIns = {
           copy: StUser.copy
         })
     },
-    data: {
+    data: (tid = router.currentRoute.value.query.tid as string) => ({
       all: () =>
-        reqGet<STable>('stable', router.currentRoute.value.query.tid, {
+        reqGet<STable>('stable', tid, {
           project: 'share-table',
           copy: STable.copy
         }).then(stbl =>
-          stbl.fkRecords.map(rcd => ({ key: rcd.key, fkUser: rcd.fkUser, ...rcd.raw }))
+          (stbl.fkRecords as StRcd[]).map(rcd => ({ key: rcd.key, fkUser: rcd.fkUser, ...rcd.raw }))
         ),
       add: async (raw: any) => {
         const newRcd = await reqPost<StRcd>(
@@ -321,7 +321,7 @@ const expIns = {
         )
         await reqLink(
           {
-            parent: ['stable', router.currentRoute.value.query.tid],
+            parent: ['stable', tid],
             child: ['fkRecords', newRcd.key]
           },
           true,
@@ -350,7 +350,7 @@ const expIns = {
       remove: async (stRcd: StRcd) => {
         await reqLink(
           {
-            parent: ['stable', router.currentRoute.value.query.tid],
+            parent: ['stable', tid],
             child: ['fkRecords', stRcd.key]
           },
           false,
@@ -359,13 +359,13 @@ const expIns = {
         return reqDelete('record', stRcd.key, { project: 'share-table' })
       },
       count: (uid?: string) =>
-        reqGet(`stable/${router.currentRoute.value.query.tid}/record`, undefined, {
+        reqGet(`stable/${tid}/record`, undefined, {
           project: 'share-table',
           action: 'count',
           type: 'api',
           axiosConfig: { params: { uid } }
         })
-    }
+    })
   }
 }
 export default expIns

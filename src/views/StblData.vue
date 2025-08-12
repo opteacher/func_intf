@@ -61,7 +61,7 @@ async function refresh() {
   )
   mapper.value = new Mapper(stable.form)
   emitter.emit('update:mapper', mapper.value)
-  count.value = await api.shareTable.data.count(lgnUsr.value?.key)
+  count.value = await api.shareTable.data().count(lgnUsr.value?.key)
   rcdKeysByLgnUsr.splice(
     0,
     rcdKeysByLgnUsr.length,
@@ -219,7 +219,7 @@ function filterDataByAuth(record: any) {
     :ref-opns="['manual', 'auto']"
     :edit-mode="stable.edtMod"
     :emitter="emitter"
-    :api="api.shareTable.data"
+    :api="api.shareTable.data()"
     :filter="filterDataByAuth"
     :mapper="mapper"
     :columns="columns"
