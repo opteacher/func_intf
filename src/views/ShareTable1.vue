@@ -23,6 +23,7 @@ import {
 } from '@ant-design/icons-vue'
 import { Modal } from 'ant-design-vue'
 import MemMgrList from '@/components/MemMgrLst.vue'
+import TblDirTree from '@/components/TblDirTree.vue'
 
 const layout = reactive({
   rgtEmitter: new TinyEmitter(),
@@ -172,11 +173,17 @@ const addColumn = reactive({
 onMounted(refresh)
 
 async function refresh(key?: string) {
-  shareTable.tables = await api.shareTable.stable.all()
   if (key) {
-    STable.copy(await api.shareTable.stable.get(key), shareTable.selected)
-  } else if (shareTable.tables.length) {
-    STable.copy(await api.shareTable.stable.get(shareTable.tables[0].key), shareTable.selected)
+    STable.copy(await api.shareTable.stable.get(key), shareTable.selected, true)
+  } else {
+    shareTable.tables = await api.shareTable.stable.all()
+    if (shareTable.tables.length) {
+      STable.copy(
+        await api.shareTable.stable.get(shareTable.tables[0].key),
+        shareTable.selected,
+        true
+      )
+    }
   }
   emitter.emit('refresh')
 }
@@ -276,16 +283,24 @@ async function onEdtStblSubmit(form: STable, callback: Function) {
 
 <template>
   <a-layout class="h-full" @mouseup="onMouseUp" @mousemove="onMouseMove">
-    <a-layout-sider theme="light" :width="layout.leftWid">Sider</a-layout-sider>
+    <a-layout-sider v-show="layout.leftVsb" class="pr-3" theme="light" :width="layout.leftWid">
+      <TblDirTree
+        :stables="shareTable.tables"
+        :sel-key="shareTable.selected.key"
+        @update:sel-key="(key: string) => refresh(key)"
+      />
+    </a-layout-sider>
     <FlexDivider
       orientation="vertical"
       v-model:wid-hgt="layout.leftWid"
       :emitter="layout.lftEmitter"
       ctrl-side="leftTop"
-      hide-btn="rightBottom"
       bg-color="white"
-      :hideBtnVsb="layout.leftVsb"
-      @lt-hbtn-click="() => swchBoolProp(layout, 'leftVsb')"
+      hbtn-txt="共享表格"
+      :hide-btn="true"
+      :hbtn-pos="{ bottom: '10px' }"
+      :is-hide="!layout.leftVsb"
+      @hbtn-click="() => swchBoolProp(layout, 'leftVsb')"
     />
     <a-layout-content class="flex flex-col bg-white px-3">
       <a-tabs
@@ -405,12 +420,14 @@ async function onEdtStblSubmit(form: STable, callback: Function) {
       v-model:wid-hgt="layout.rightWid"
       :emitter="layout.rgtEmitter"
       ctrl-side="rightBottom"
-      hide-btn="leftTop"
       bg-color="white"
-      :hideBtnVsb="layout.rightVsb"
-      @lt-hbtn-click="() => swchBoolProp(layout, 'rightVsb')"
+      hbtn-txt="成员管理"
+      :hide-btn="true"
+      :is-hide="!layout.rightVsb"
+      :hbtn-pos="{ bottom: '10px' }"
+      @hbtn-click="() => swchBoolProp(layout, 'rightVsb')"
     />
-    <a-layout-sider v-show="layout.rightVsb" theme="light" :width="layout.rightWid">
+    <a-layout-sider v-show="layout.rightVsb" theme="light" class="pl-3" :width="layout.rightWid">
       <MemMgrList :stable="shareTable.selected" @refresh="refresh" />
     </a-layout-sider>
   </a-layout>

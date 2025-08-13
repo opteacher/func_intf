@@ -11,7 +11,7 @@ import {
 } from '@ant-design/icons-vue'
 import StUser from '@/types/stUser'
 import { cloneDeep, difference } from 'lodash'
-import { reactive, ref } from 'vue'
+import { reactive, ref, toRefs, watch } from 'vue'
 import { TinyEmitter } from 'tiny-emitter'
 import Mapper, { BaseMapper, mapTypeTemps } from '@lib/types/mapper'
 import { compoOpns } from '@lib/types'
@@ -28,7 +28,6 @@ const props = defineProps({
 })
 const emit = defineEmits(['refresh'])
 const userList = reactive({
-  data: [] as StUser[],
   emitter: new TinyEmitter(),
   mapper: new Mapper({
     lgnIden: {
@@ -191,6 +190,26 @@ const extraForm = ref()
 const baseMapper = new BaseMapper()
 const extraMkeys = Object.keys(userExtra.mapper)
 
+watch(
+  () => props.stable.usrExtra,
+  () => {
+    userList.emitter.emit('update:mprop', {
+      'extra.display': Object.keys(props.stable.usrExtra).length !== 0,
+      'extra.items': props.stable.usrExtra
+    })
+    userExtra.emitter.emit(
+      'update:mprop',
+      Object.fromEntries(
+        Object.entries(props.stable.usrExtra).map(([key, val]) => [
+          key,
+          { ...pickOrIgnore(val, ['rules']), disabled: true }
+        ])
+      )
+    )
+  },
+  { deep: true }
+)
+
 function onAddExtPropCancel() {
   userExtra.emitter.emit('update:mprop', {
     'addProp.display': true,
@@ -270,10 +289,17 @@ function onAuthConf(user: StUser) {
   StUser.copy(user, userList.formState, true)
   authTable.visible = true
 }
+function onUserClick(user: StUser) {
+  userList.emitter.emit('update:visible', {
+    show: true,
+    object: user,
+    viewOnly: true
+  })
+}
 </script>
 
 <template>
-  <a-list class="pl-3" item-layout="horizontal" size="small" :data-source="stable.fkUsers">
+  <a-list item-layout="horizontal" size="small" :data-source="stable.fkUsers">
     <template #header>
       <a-page-header class="p-0">
         <template #avatar>
@@ -313,7 +339,12 @@ function onAuthConf(user: StUser) {
     </template>
     <template #renderItem="{ item: user }">
       <a-list-item class="px-0">
-        <a-list-item-meta :title="user.lgnIden">
+        <a-list-item-meta>
+          <template #title>
+            <a @click="() => onUserClick(user)">
+              <b>{{ user.lgnIden }}</b>
+            </a>
+          </template>
           <template #avatar>
             <a-avatar size="small">
               <template #icon><UserOutlined /></template>
@@ -321,13 +352,6 @@ function onAuthConf(user: StUser) {
           </template>
         </a-list-item-meta>
         <template #actions>
-          <a-button
-            type="text"
-            size="small"
-            @click="() => userList.emitter.emit('update:visible', { show: true, object: user })"
-          >
-            <template #icon><EditOutlined /></template>
-          </a-button>
           <a-button type="text" size="small" @click="() => onAuthConf(user)">
             <template #icon><SafetyOutlined /></template>
           </a-button>
@@ -337,6 +361,7 @@ function onAuthConf(user: StUser) {
   </a-list>
   <FormDialog
     title="添加用户"
+    :operable="true"
     :mapper="userList.mapper"
     :emitter="userList.emitter"
     :new-fun="() => newOne(StUser)"
