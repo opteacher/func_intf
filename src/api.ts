@@ -257,14 +257,13 @@ const expIns = {
       remove: (stable: STable) =>
         reqDelete('stable', stable.key, { project: 'share-table', type: 'api' })
     },
-    user: {
+    user: (tid = router.currentRoute.value.query.tid as string) => ({
       all: () =>
-        reqGet('stable', router.currentRoute.value.query.tid, {
+        reqGet<STable>('stable', tid, {
           project: 'share-table',
           copy: STable.copy
-        }).then(stbl => stbl.fkUsers),
+        }).then(stbl => stbl.fkUsers as StUser[]),
       add: async (stUser: StUser, auth?: Auth) => {
-        const tid = router.currentRoute.value.query.tid
         let tempAuth = auth
         if (!tempAuth) {
           tempAuth = await expIns.shareTable.stable
@@ -289,7 +288,7 @@ const expIns = {
       remove: async (stUser: StUser) => {
         await reqLink(
           {
-            parent: ['stable', router.currentRoute.value.query.tid],
+            parent: ['stable', tid],
             child: ['fkUsers', stUser.key]
           },
           false,
@@ -298,13 +297,13 @@ const expIns = {
         return reqDelete('user', stUser.key, { project: 'share-table' })
       },
       login: (stUser: StUser) =>
-        reqPost(`stable/${router.currentRoute.value.query.tid}/user`, stUser, {
+        reqPost(`stable/${tid}/user`, stUser, {
           project: 'share-table',
           action: 'login',
           type: 'api',
           copy: StUser.copy
         })
-    },
+    }),
     data: (tid = router.currentRoute.value.query.tid as string) => ({
       all: () =>
         reqGet<STable>('stable', tid, {

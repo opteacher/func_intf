@@ -74,7 +74,7 @@ async function onSubmit() {
   try {
     switch (login.mode) {
       case 'register':
-        await api.shareTable.user.add(login.form, stable.tempAuth)
+        await api.shareTable.user().add(login.form, stable.tempAuth)
         login.regSucceed = true
         break
       case 'login':

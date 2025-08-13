@@ -5,23 +5,36 @@ import { computed, createVNode, nextTick, onMounted, reactive, ref } from 'vue'
 import EditableTable from '@lib/components/EditableTable.vue'
 import api from '@/api'
 import STable, { avaCmpTypes, extraDict } from '@/types/sTable'
-import Mapper, { newObjByMapper, BaseMapper, mapTypeTemps } from '@lib/types/mapper'
+import Mapper, {
+  newObjByMapper,
+  BaseMapper,
+  mapTypeTemps,
+  type MapperType
+} from '@lib/types/mapper'
 import Column from '@lib/types/column'
 import FormDialog from '@lib/components/FormDialog.vue'
 import { compoOpns, Cond, type CompoType } from '@lib/types'
-import { getProp, newOne, pickOrIgnore, replaceObjProps, setProp } from '@lib/utils'
-import { EditOutlined, ExclamationCircleOutlined, PlusOutlined } from '@ant-design/icons-vue'
+import { getProp, newOne, pickOrIgnore, replaceObjProps, setProp, swchBoolProp } from '@lib/utils'
+import {
+  EditOutlined,
+  ExclamationCircleOutlined,
+  PlusOutlined,
+  SettingOutlined
+} from '@ant-design/icons-vue'
 import { Modal } from 'ant-design-vue'
+import MemMgrList from '@/components/MemMgrLst.vue'
 
 const layout = reactive({
   rgtEmitter: new TinyEmitter(),
   lftEmitter: new TinyEmitter(),
   leftWid: 200,
-  rightWid: 200
+  rightWid: 300,
+  leftVsb: true,
+  rightVsb: true
 })
 const stableRef = ref()
 const shareTable = reactive({
-  seled: new STable(),
+  selected: new STable(),
   tables: [] as STable[],
   emitter: new TinyEmitter(),
   mapper: new Mapper({
@@ -63,11 +76,11 @@ const shareTable = reactive({
 })
 const emitter = new TinyEmitter()
 const columns = computed(() =>
-  Object.entries(shareTable.seled.form).map(([key, value]) =>
+  Object.entries(shareTable.selected.form).map(([key, value]) =>
     setProp(new Column(value.label, key), 'mapper', value)
   )
 )
-const mapper = computed(() => new Mapper(shareTable.seled.form))
+const mapper = computed(() => new Mapper(shareTable.selected.form))
 const addColumn = reactive({
   mapper: new Mapper({
     demo: {
@@ -105,7 +118,7 @@ const addColumn = reactive({
           'extra.items': new Mapper(Object.fromEntries(fixMapper))
         })
         addColumn.emitter.emit('update:dprop', extPropsOfType(ctype))
-        nextTick(() => onAddColChange(record))
+        onAddColChange(record)
       }
     },
     placeholder: {
@@ -130,18 +143,43 @@ const addColumn = reactive({
       label: '额外参数',
       canFold: false,
       display: [Cond.create('type', '!=', undefined)]
+    },
+    delCol: {
+      type: 'Button',
+      inner: '删除该列',
+      danger: true,
+      offset: 4,
+      display: ({ key }: any) => key in shareTable.selected.form,
+      onClick: (form: MapperType) =>
+        Modal.confirm({
+          title: '确认删除该列？',
+          icon: createVNode(ExclamationCircleOutlined),
+          content: '删除该列的同时，列数据也将丢失！',
+          onOk: async () => {
+            await api.shareTable.stable.update({
+              key: shareTable.selected.key,
+              form: pickOrIgnore(shareTable.selected.form, [form.key])
+            })
+            addColumn.emitter.emit('update:visible', false)
+            await refresh(shareTable.selected.key)
+          }
+        })
     }
   }),
   emitter: new TinyEmitter()
 })
 
-onMounted(async () => {
-  shareTable.tables = await api.shareTable.stable.all()
-  if (shareTable.tables.length) {
-    STable.copy(shareTable.tables[0], shareTable.seled)
-  }
-})
+onMounted(refresh)
 
+async function refresh(key?: string) {
+  shareTable.tables = await api.shareTable.stable.all()
+  if (key) {
+    STable.copy(await api.shareTable.stable.get(key), shareTable.selected)
+  } else if (shareTable.tables.length) {
+    STable.copy(await api.shareTable.stable.get(shareTable.tables[0].key), shareTable.selected)
+  }
+  emitter.emit('refresh')
+}
 function onMouseUp() {
   layout.rgtEmitter.emit('mouseup')
   layout.lftEmitter.emit('mouseup')
@@ -150,7 +188,7 @@ function onMouseMove(e: MouseEvent) {
   layout.rgtEmitter.emit('mousemove', e)
   layout.lftEmitter.emit('mousemove', e)
 }
-function onStableTabEdit(tblKey: string, action: string) {
+function onStableTabEdit(key: string, action: string) {
   if (action === 'add') {
     shareTable.emitter.emit('update:visible', true)
   } else {
@@ -158,17 +196,9 @@ function onStableTabEdit(tblKey: string, action: string) {
       title: '确定删除该表？',
       icon: createVNode(ExclamationCircleOutlined),
       content: '删除表的同时，数据和成员也将丢失！请再三确认！',
-      onOk() {
-        console.log('OK')
-      }
+      onOk: () => api.shareTable.stable.remove(STable.copy({ key })).then(() => refresh())
     })
   }
-}
-function onStableSelect(tblKey: string) {
-  STable.copy(
-    shareTable.tables.find(tbl => tbl.key === tblKey),
-    shareTable.seled
-  )
 }
 function onEdtColClick(column: any) {
   addColumn.emitter.emit('update:mprop', {
@@ -183,9 +213,11 @@ function extPropsOfType(type: CompoType) {
   return pickOrIgnore(mapTypeTemps[type](), Object.keys(new BaseMapper()))
 }
 function onAddColChange(record: any) {
-  addColumn.emitter.emit('update:mprop', {
-    'demo.items': new Mapper({ $: record })
-  })
+  nextTick(() =>
+    addColumn.emitter.emit('update:mprop', {
+      'demo.items': new Mapper({ $: record })
+    })
+  )
 }
 function onAddPathClick() {
   if (shareTable.createDir.visible) {
@@ -204,7 +236,7 @@ function onAddPathClick() {
 }
 function onDataRefresh() {
   nextTick(() => {
-    shareTable.height = (stableRef.value[0].tableRef.table.$el as HTMLElement).clientHeight
+    shareTable.height = (stableRef.value.tableRef.table.$el as HTMLElement).clientHeight
   })
 }
 function newColumn() {
@@ -212,12 +244,33 @@ function newColumn() {
     rules: [{ required: true, message: '必须输入或选择有效项！' }]
   })
 }
-function onAddColSubmit(form: any, callback: Function) {
-  console.log(form)
+async function onEdtColSubmit(form: any, callback: Function) {
+  if (form.key in shareTable.selected.form) {
+    await api.shareTable.stable.update({
+      key: shareTable.selected.key,
+      ['form.' + form.key]: pickOrIgnore(form, ['$', 'delCol'])
+    })
+  } else {
+    await api.shareTable.stable.update({
+      key: shareTable.selected.key,
+      form: Object.fromEntries(
+        Object.entries(shareTable.selected.form).concat([
+          [form.key, pickOrIgnore(form, ['$', 'delCol'])]
+        ])
+      )
+    })
+  }
   callback()
+  await refresh(shareTable.selected.key)
 }
 function addColDemoChange(show: boolean) {
   addColumn.emitter.emit('update:mprop', { 'demo.display': show })
+}
+async function onEdtStblSubmit(form: STable, callback: Function) {
+  const oper = form.key ? 'update' : 'add'
+  await api.shareTable.stable[oper](form)
+  callback()
+  await refresh(form.key)
 }
 </script>
 
@@ -228,53 +281,67 @@ function addColDemoChange(show: boolean) {
       orientation="vertical"
       v-model:wid-hgt="layout.leftWid"
       :emitter="layout.lftEmitter"
-      ctrl-side="left"
+      ctrl-side="leftTop"
+      hide-btn="rightBottom"
+      bg-color="white"
+      :hideBtnVsb="layout.leftVsb"
+      @lt-hbtn-click="() => swchBoolProp(layout, 'leftVsb')"
     />
-    <a-layout-content class="px-2">
+    <a-layout-content class="flex flex-col bg-white px-3">
       <a-tabs
-        class="h-full"
-        v-model:activeKey="shareTable.seled.key"
+        v-model:activeKey="shareTable.selected.key"
         type="editable-card"
-        @change="onStableSelect"
+        @change="refresh"
         @edit="onStableTabEdit"
       >
-        <a-tab-pane
-          v-for="stable in shareTable.tables"
-          :key="stable.key"
-          :tab="stable.name"
-          class="flex"
-        >
-          <EditableTable
-            class="flex-1"
-            ref="stableRef"
-            :edit-mode="stable.edtMod"
-            :emitter="emitter"
-            :api="api.shareTable.data(stable.key)"
-            :mapper="mapper"
-            :columns="columns"
-            :addable="true"
-            :editable="true"
-            :delable="true"
-            :new-fun="() => newObjByMapper(mapper)"
-            @refresh="onDataRefresh"
-          >
-            <template v-for="col in columns" #[`${col.key}HD`]="{ column }: any">
-              <a-button class="p-0 border-0" type="link" @click="() => onEdtColClick(column)">
-                <template #icon><EditOutlined /></template>
-                {{ column.title }}
-              </a-button>
-            </template>
-          </EditableTable>
+        <template #rightExtra>
           <a-button
-            class="bg-[#fafafa] hover:bg-[#00000010] rounded-s-none"
-            type="text"
-            :style="{ height: shareTable.height + 'px' }"
-            @click="() => addColumn.emitter.emit('update:visible', true)"
+            type="link"
+            @click="
+              () =>
+                shareTable.emitter.emit('update:visible', {
+                  show: true,
+                  object: shareTable.selected
+                })
+            "
           >
-            <template #icon><PlusOutlined /></template>
+            <template #icon><SettingOutlined /></template>
+            配置当前表格
           </a-button>
-        </a-tab-pane>
+        </template>
+        <a-tab-pane v-for="stable in shareTable.tables" :key="stable.key" :tab="stable.name" />
       </a-tabs>
+      <div class="flex flex-1">
+        <EditableTable
+          class="flex-1"
+          ref="stableRef"
+          :edit-mode="shareTable.selected.edtMod"
+          :emitter="emitter"
+          :api="api.shareTable.data(shareTable.selected.key)"
+          :mapper="mapper"
+          :columns="columns"
+          :addable="true"
+          :editable="true"
+          :delable="true"
+          :new-fun="() => newObjByMapper(mapper)"
+          @refresh="onDataRefresh"
+        >
+          <template v-for="col in columns" #[`${col.key}HD`]="{ column }: any">
+            <a-button class="p-0 border-0" type="link" @click="() => onEdtColClick(column)">
+              <template #icon><EditOutlined /></template>
+              {{ column.title }}
+            </a-button>
+          </template>
+        </EditableTable>
+        <a-button
+          class="bg-[#fafafa] hover:bg-[#00000010] rounded-s-none"
+          type="text"
+          :style="{ height: shareTable.height + 'px' }"
+          @click="() => addColumn.emitter.emit('update:visible', true)"
+        >
+          <template #icon><PlusOutlined /></template>
+        </a-button>
+      </div>
       <FormDialog
         title="添加列"
         :mapper="addColumn.mapper"
@@ -283,9 +350,27 @@ function addColDemoChange(show: boolean) {
         :ign-props="['$']"
         @update:visible="() => addColumn.emitter.emit('update:mprop', { 'demo.items': {} })"
         @before-submit="() => addColDemoChange(false)"
-        @submit="onAddColSubmit"
-      />
-      <FormDialog title="添加表" :mapper="shareTable.mapper" :emitter="shareTable.emitter">
+        @submit="onEdtColSubmit"
+      >
+        <template #keySFX="{ formState }: any">
+          <a-button @click="() => (formState.key = formState.label)">同列名</a-button>
+        </template>
+        <template #rules[0].requiredSFX="{ formState }: any">
+          <a-form-item-rest>
+            <a-input
+              :disabled="!formState.rules[0].required"
+              placeholder="输入错误提示信息"
+              v-model:value="formState.rules[0].message"
+            />
+          </a-form-item-rest>
+        </template>
+      </FormDialog>
+      <FormDialog
+        title="添加表"
+        :mapper="shareTable.mapper"
+        :emitter="shareTable.emitter"
+        @submit="onEdtStblSubmit"
+      >
         <template #path="{ formState }: any">
           <div class="flex space-x-2">
             <a-cascader
@@ -319,8 +404,14 @@ function addColDemoChange(show: boolean) {
       orientation="vertical"
       v-model:wid-hgt="layout.rightWid"
       :emitter="layout.rgtEmitter"
-      ctrl-side="right"
+      ctrl-side="rightBottom"
+      hide-btn="leftTop"
+      bg-color="white"
+      :hideBtnVsb="layout.rightVsb"
+      @lt-hbtn-click="() => swchBoolProp(layout, 'rightVsb')"
     />
-    <a-layout-sider theme="light" :width="layout.rightWid">Sider</a-layout-sider>
+    <a-layout-sider v-show="layout.rightVsb" theme="light" :width="layout.rightWid">
+      <MemMgrList :stable="shareTable.selected" @refresh="refresh" />
+    </a-layout-sider>
   </a-layout>
 </template>

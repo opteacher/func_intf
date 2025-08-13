@@ -230,7 +230,7 @@ async function onAuthSubmit() {
   if (!userTable.formState.key) {
     await api.shareTable.stable.update({ key: route.query.tid, tempAuth: userTable.formState.auth })
   } else {
-    await api.shareTable.user.update(pickOrIgnore(userTable.formState, ['key', 'auth'], false))
+    await api.shareTable.user().update(pickOrIgnore(userTable.formState, ['key', 'auth'], false))
   }
   resetUserAuth()
   await refresh()
@@ -297,7 +297,7 @@ function onUsrExtCancel(visible: boolean) {
     :title="stable.name"
     :icon="TeamOutlined"
     :imExport="[{}, true]"
-    :api="api.shareTable.user"
+    :api="api.shareTable.user()"
     :columns="userTable.columns"
     :mapper="userTable.mapper"
     :emitter="userTable.emitter"
