@@ -265,16 +265,22 @@ function onAddColChange(record: any) {
     })
   )
 }
-function onAddPathClick() {
+function onAddPathClick(path: string[]) {
   if (shareTable.path.visible) {
+    const key = path.length
+      ? path.map((p, idx) => (idx ? '.children' : 'path.options') + `[{value:${p}}]`).join('') +
+        '.children'
+      : 'path.options'
     shareTable.emitter.emit('update:mprop', {
-      'path.options': [
+      [key]: getProp(shareTable.mapper, key, []).concat([
         {
           label: shareTable.path.value,
           value: shareTable.path.value
         }
-      ]
+      ])
     })
+    shareTable.emitter.emit('update:dprop', { path: path.concat([shareTable.path.value]) })
+    shareTable.path.value = ''
     shareTable.path.visible = false
   } else {
     shareTable.path.visible = true
@@ -437,18 +443,28 @@ async function onPrevUsrSelect(key: string) {
             v-model:value="shareTable.preview.selUser"
             @select="onPrevUsrSelect"
           />
+          。如果设有权限控制，则实际有登录页面
         </template>
         <template #extra>
-          <a-button type="primary">
-            <template #icon><ShareAltOutlined /></template>
-            查看共享表格
-          </a-button>
+          <a-popover placement="bottom" trigger="click">
+            <template #content>
+              <a-typography-link
+                :href="`/#/func_intf/share_table/data?tid=${shareTable.selected.key}&fullView=1`"
+                target="_blank"
+              >
+                点击跳转
+              </a-typography-link>
+            </template>
+            <a-button type="primary">
+              <template #icon><ShareAltOutlined /></template>
+              查看共享表格
+            </a-button>
+          </a-popover>
         </template>
       </a-page-header>
       <div class="flex flex-1">
         <EditableTable
           class="flex-1"
-          :bordered="false"
           ref="stableRef"
           :edit-mode="shareTable.selected.edtMod"
           :emitter="emitter"
@@ -478,8 +494,7 @@ async function onPrevUsrSelect(key: string) {
         </EditableTable>
         <a-button
           v-if="!shareTable.preview.visible"
-          class="bg-[#fafafa] hover:bg-[#00000010] rounded-l-none"
-          type="text"
+          class="bg-[#fafafa] hover:bg-[#00000010] rounded-l-none border-l-0 border-[#f0f0f0]"
           :style="{ height: shareTable.height + 'px' }"
           @click="() => addColumn.emitter.emit('update:visible', true)"
         >
@@ -516,26 +531,32 @@ async function onPrevUsrSelect(key: string) {
         @submit="onEdtStblSubmit"
       >
         <template #path="{ formState }: any">
-          <div class="flex space-x-2">
-            <a-cascader
-              class="flex-1"
-              :options="shareTable.mapper.path.options"
-              :placeholder="shareTable.mapper.path.placeholder || '请选择'"
-              :value="formState.path"
-              change-on-select
-              @change="(newVal: any) => (formState.path = newVal)"
-            />
-            <a-input
-              v-if="shareTable.path.visible"
-              class="w-40"
-              placeholder="空目录不会被创建"
-              v-model:value="shareTable.path.value"
-              allow-clear
-            />
-            <a-button type="primary" :ghost="!shareTable.path.visible" @click="onAddPathClick">
-              创建目录
-            </a-button>
-          </div>
+          <a-form-item-rest>
+            <div class="flex space-x-2">
+              <a-cascader
+                class="flex-1"
+                :options="shareTable.mapper.path.options"
+                :placeholder="shareTable.mapper.path.placeholder || '请选择'"
+                :value="formState.path"
+                change-on-select
+                @change="(newVal: any) => (formState.path = newVal)"
+              />
+              <a-input
+                v-if="shareTable.path.visible"
+                class="w-40"
+                placeholder="空目录不会被创建"
+                v-model:value="shareTable.path.value"
+                allow-clear
+              />
+              <a-button
+                type="primary"
+                :ghost="!shareTable.path.visible"
+                @click="() => onAddPathClick(formState.path)"
+              >
+                创建目录
+              </a-button>
+            </div>
+          </a-form-item-rest>
         </template>
       </FormDialog>
     </a-layout-content>

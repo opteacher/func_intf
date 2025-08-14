@@ -5,7 +5,9 @@ import {
   FolderAddOutlined,
   CheckOutlined,
   SelectOutlined,
-  DeleteOutlined
+  DeleteOutlined,
+  FolderOpenOutlined,
+  FolderOutlined
 } from '@ant-design/icons-vue'
 import type { DataNode } from 'ant-design-vue/es/tree'
 import { onMounted, reactive, ref, watch, type PropType } from 'vue'
@@ -14,7 +16,7 @@ const props = defineProps({
   stables: { type: Array as PropType<STable[]>, required: true },
   selKey: { type: String, default: '' }
 })
-const emit = defineEmits(['update:selKey', 'add-table'])
+const emit = defineEmits(['update:selKey', 'add-table', 'del-tables'])
 const expandedKeys = ref<string[]>([])
 const selectedKeys = ref<string[]>([props.selKey])
 const treeData = reactive<DataNode[]>([])
@@ -26,16 +28,27 @@ watch(() => props.stables, refresh, { deep: true })
 
 function refresh() {
   selectedKeys.value[0] = props.selKey
+  const stable = props.stables.find(tbl => tbl.key === props.selKey)
+  if (stable?.path.length) {
+    let prevKey = ''
+    for (const part of stable?.path) {
+      prevKey = prevKey ? [prevKey, part].join('.') : part
+      expandedKeys.value.push(prevKey)
+    }
+  }
+
   treeData.splice(0, treeData.length)
   for (const stable of props.stables) {
     if (stable.path.length) {
       let arr = treeData
-      for (const key of stable.path) {
-        let pnode = arr.find(nd => nd.key === key)
+      let prevKey = ''
+      for (const part of stable.path) {
+        prevKey = prevKey ? [prevKey, part].join('.') : part
+        let pnode = arr.find(nd => nd.key === prevKey)
         if (pnode) {
           arr = pnode.children || []
         } else {
-          pnode = { key, title: key, children: [], isLeaf: false }
+          pnode = { key: prevKey, title: part, children: [], isLeaf: false }
           arr.push(pnode)
           arr = pnode.children as DataNode[]
         }
@@ -46,23 +59,49 @@ function refresh() {
     }
   }
 }
-function onAddDirClick(nodes: DataNode[] = treeData) {
+function onAddDirClick() {
+  let nodes = treeData
+  if (selectedKeys.value.length) {
+    const selNode = findNodeByKey(selectedKeys.value[0])
+    if (selNode && !selNode.isLeaf) {
+      selNode.children = selNode.children || []
+      nodes = selNode.children
+    }
+  }
   nodes.push({ key: 'addDir', title: '', children: [], isLeaf: false })
 }
 function onAddDirSubmit() {
-  rmvNodeByKey('addDir')
+  const pnode = rmvNodeByKey('addDir')
   if (editDir.value) {
-    treeData.push({ key: editDir.value, title: editDir.value, children: [], isLeaf: false })
+    const newNode = {
+      key: pnode && pnode.key ? [pnode.key, editDir.value].join('.') : editDir.value,
+      title: editDir.value,
+      children: [],
+      isLeaf: false
+    }
+    if (pnode) {
+      pnode.children = pnode.children ? pnode.children.concat([newNode]) : [newNode]
+    } else {
+      treeData.push(newNode)
+    }
     editDir.value = ''
   }
 }
-function rmvNodeByKey(key: string, ndArray: DataNode[] = treeData) {
+function rmvNodeByKey(
+  key: string,
+  ndArray: DataNode[] = treeData,
+  parent?: DataNode
+): DataNode | undefined {
   const index = ndArray.findIndex(nd => nd.key === key)
   if (index !== -1) {
     ndArray.splice(index, 1)
+    return parent
   } else {
     for (const node of ndArray) {
-      rmvNodeByKey(key, node.children || [])
+      const ret = rmvNodeByKey(key, node.children || [], node)
+      if (ret) {
+        return ret
+      }
     }
   }
 }
@@ -72,18 +111,20 @@ function onCtxMnuClick(nkey: string, mkey: 'select' | 'addDir' | 'addTbl' | 'del
       emit('update:selKey', nkey)
       break
     case 'addDir':
+      selectedKeys.value = [nkey]
+      onAddDirClick()
+      break
+    case 'addTbl':
+      emit('add-table', { path: nkey.split('.') })
+      break
+    case 'delete':
       {
         const node = findNodeByKey(nkey)
         if (node) {
-          expandedKeys.value.push(node?.key as string)
-          onAddDirClick(node?.children)
+          // @_@：暂时不做文件夹删除
+          emit('del-tables', node.isLeaf ? [node.key] : undefined)
         }
       }
-      break
-    case 'addTbl':
-      emit('add-table', { path: pathNodeByKey(nkey) })
-      break
-    case 'delete':
       break
   }
 }
@@ -93,24 +134,15 @@ function findNodeByKey(key: string, ndArray: DataNode[] = treeData): DataNode | 
     return ndArray[index]
   } else {
     for (const node of ndArray) {
-      const match = findNodeByKey(key, node.children)
+      const match = findNodeByKey(key, node.children || [])
       if (match) {
         return match
       }
     }
   }
 }
-function pathNodeByKey(key: string, ndArray: DataNode[] = treeData): string[] {
-  const index = ndArray.findIndex(nd => nd.key === key)
-  if (index === -1) {
-    for (const node of ndArray) {
-      const paths = pathNodeByKey(key, node.children)
-      if (paths.length) {
-        return [key].concat(paths)
-      }
-    }
-  }
-  return []
+function onNodeSelect([key]: string[], { node }: { node: DataNode }) {
+  !node.isLeaf ? undefined : emit('update:selKey', key)
 }
 </script>
 
@@ -139,8 +171,13 @@ function pathNodeByKey(key: string, ndArray: DataNode[] = treeData): string[] {
       v-model:selectedKeys="selectedKeys"
       multiple
       :tree-data="treeData"
-      @select="([key]: string[]) => key === 'addDir' ? undefined : emit('update:selKey', key)"
+      @select="onNodeSelect"
     >
+      <template #icon="{ isLeaf, expanded }">
+        <TableOutlined v-if="isLeaf" />
+        <FolderOpenOutlined v-else-if="expanded" />
+        <FolderOutlined v-else />
+      </template>
       <template #title="{ key, title, isLeaf }">
         <a-input
           v-if="key === 'addDir'"
