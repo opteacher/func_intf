@@ -93,7 +93,7 @@ function onMuItmSelect(params: SelectInfo) {
               <a-menu-item key="table">所有表格</a-menu-item>
               <a-menu-item key="data">数据表</a-menu-item>
               <a-menu-item key="user">用户表</a-menu-item>
-              <a-menu-item key="n1">一页表</a-menu-item>
+              <a-menu-item key="table1">一页表</a-menu-item>
             </a-sub-menu>
           </a-menu>
         </a-layout-sider>

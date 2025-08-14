@@ -19,11 +19,16 @@ import {
   EditOutlined,
   ExclamationCircleOutlined,
   PlusOutlined,
-  SettingOutlined
+  SettingOutlined,
+  EyeOutlined,
+  DeleteOutlined,
+  ShareAltOutlined
 } from '@ant-design/icons-vue'
 import { Modal } from 'ant-design-vue'
 import MemMgrList from '@/components/MemMgrLst.vue'
 import TblDirTree from '@/components/TblDirTree.vue'
+import type StUser from '@/types/stUser'
+import Auth from '@/types/stAuth'
 
 const layout = reactive({
   rgtEmitter: new TinyEmitter(),
@@ -69,11 +74,39 @@ const shareTable = reactive({
       disabled: [Cond.create('usrAuth', '!=', true)]
     }
   }),
-  createDir: {
+  path: {
+    options: [],
     visible: false,
     value: ''
   },
-  height: 0
+  height: 0,
+  preview: {
+    visible: false,
+    selUser: 'admin',
+    auth: new Auth(),
+    rcdKeys: [] as string[],
+    tblProps: {
+      count: 0,
+      addable: true,
+      edtable: true,
+      edtKeys: [] as string[],
+      delable: true,
+      delKeys: [] as string[],
+      filter: (record: any) => {
+        {
+          if (!shareTable.selected.usrAuth) {
+            return true
+          }
+          if (!shareTable.preview.auth.queriable) {
+            return false
+          }
+          return shareTable.preview.auth.qryOnlyOwn
+            ? record.fkUser === shareTable.preview.selUser
+            : true
+        }
+      }
+    }
+  }
 })
 const emitter = new TinyEmitter()
 const columns = computed(() =>
@@ -169,21 +202,27 @@ const addColumn = reactive({
   }),
   emitter: new TinyEmitter()
 })
+const userOpns = computed<{ label: string; value: string }[]>(() =>
+  [{ label: '管理员', value: 'admin' }].concat(
+    (shareTable.selected.fkUsers as StUser[]).map(usr => ({ label: usr.lgnIden, value: usr.key }))
+  )
+)
 
 onMounted(refresh)
 
 async function refresh(key?: string) {
+  shareTable.tables = await api.shareTable.stable.all()
   if (key) {
     STable.copy(await api.shareTable.stable.get(key), shareTable.selected, true)
-  } else {
-    shareTable.tables = await api.shareTable.stable.all()
-    if (shareTable.tables.length) {
-      STable.copy(
-        await api.shareTable.stable.get(shareTable.tables[0].key),
-        shareTable.selected,
-        true
-      )
-    }
+  } else if (shareTable.tables.length) {
+    STable.copy(
+      await api.shareTable.stable.get(shareTable.tables[0].key),
+      shareTable.selected,
+      true
+    )
+  }
+  for (const table of shareTable.tables) {
+    // console.log(table.path)
   }
   emitter.emit('refresh')
 }
@@ -227,18 +266,18 @@ function onAddColChange(record: any) {
   )
 }
 function onAddPathClick() {
-  if (shareTable.createDir.visible) {
+  if (shareTable.path.visible) {
     shareTable.emitter.emit('update:mprop', {
       'path.options': [
         {
-          label: shareTable.createDir.value,
-          value: shareTable.createDir.value
+          label: shareTable.path.value,
+          value: shareTable.path.value
         }
       ]
     })
-    shareTable.createDir.visible = false
+    shareTable.path.visible = false
   } else {
-    shareTable.createDir.visible = true
+    shareTable.path.visible = true
   }
 }
 function onDataRefresh() {
@@ -255,7 +294,9 @@ async function onEdtColSubmit(form: any, callback: Function) {
   if (form.key in shareTable.selected.form) {
     await api.shareTable.stable.update({
       key: shareTable.selected.key,
-      ['form.' + form.key]: pickOrIgnore(form, ['$', 'delCol'])
+      form: replaceObjProps(shareTable.selected.form, {
+        [form.key]: pickOrIgnore(form, ['$', 'delCol'])
+      })
     })
   } else {
     await api.shareTable.stable.update({
@@ -279,77 +320,165 @@ async function onEdtStblSubmit(form: STable, callback: Function) {
   callback()
   await refresh(form.key)
 }
+function onEdtStblClick(stbl: any = shareTable.selected) {
+  shareTable.emitter.emit('update:visible', {
+    show: true,
+    object: STable.copy(stbl)
+  })
+}
+function onDelStblClick() {
+  Modal.confirm({
+    title: '确定删除该表格吗？',
+    icon: createVNode(ExclamationCircleOutlined),
+    content: '该表格的记录数据和成员都将被删除，请再三确认！',
+    okType: 'danger',
+    onOk: async () => {
+      await api.shareTable.stable.remove(shareTable.selected)
+      await refresh()
+    }
+  })
+}
+async function onPrevUsrSelect(key: string) {
+  if (key === 'admin') {
+    shareTable.preview.auth.reset()
+    shareTable.preview.auth.canAddNum = '*'
+    shareTable.preview.tblProps.count = 0
+    shareTable.preview.rcdKeys = ['*']
+  } else {
+    const user = (shareTable.selected.fkUsers as StUser[]).find(usr => usr.key === key) as StUser
+    Auth.copy(user.auth, shareTable.preview.auth, true)
+    shareTable.preview.tblProps.count = await api.shareTable
+      .data(shareTable.selected.key)
+      .count(key)
+    shareTable.preview.rcdKeys = (
+      await api.shareTable.data(shareTable.selected.key).ownByWho(user.key)
+    ).map(rcd => rcd.key)
+  }
+  shareTable.preview.tblProps.addable =
+    !shareTable.preview.visible ||
+    (shareTable.preview.auth.addable &&
+      (shareTable.preview.auth.canAddNum === '*' ||
+        shareTable.preview.tblProps.count < shareTable.preview.auth.canAddNum))
+  shareTable.preview.tblProps.edtable =
+    !shareTable.preview.visible || shareTable.preview.auth.updatable
+  shareTable.preview.tblProps.edtKeys =
+    shareTable.preview.visible && shareTable.preview.auth.updOnlyOwn
+      ? shareTable.preview.rcdKeys
+      : ['*']
+  shareTable.preview.tblProps.delable =
+    !shareTable.preview.visible || shareTable.preview.auth.deletable
+  shareTable.preview.tblProps.delKeys =
+    shareTable.preview.visible && shareTable.preview.auth.delOnlyOwn
+      ? shareTable.preview.rcdKeys
+      : ['*']
+}
 </script>
 
 <template>
   <a-layout class="h-full" @mouseup="onMouseUp" @mousemove="onMouseMove">
-    <a-layout-sider v-show="layout.leftVsb" class="pr-3" theme="light" :width="layout.leftWid">
-      <TblDirTree
-        :stables="shareTable.tables"
-        :sel-key="shareTable.selected.key"
-        @update:sel-key="(key: string) => refresh(key)"
+    <template v-if="!shareTable.preview.visible">
+      <a-layout-sider v-show="layout.leftVsb" class="pr-3" theme="light" :width="layout.leftWid">
+        <TblDirTree
+          :stables="shareTable.tables"
+          :sel-key="shareTable.selected.key"
+          @update:sel-key="(key: string) => refresh(key)"
+          @add-table="(obj: object) => onEdtStblClick(obj)"
+        />
+      </a-layout-sider>
+      <FlexDivider
+        orientation="vertical"
+        v-model:wid-hgt="layout.leftWid"
+        :emitter="layout.lftEmitter"
+        ctrl-side="leftTop"
+        bg-color="white"
+        hbtn-txt="共享表格"
+        :hide-btn="true"
+        :hbtn-pos="{ bottom: '10px' }"
+        :is-hide="!layout.leftVsb"
+        @hbtn-click="() => swchBoolProp(layout, 'leftVsb')"
       />
-    </a-layout-sider>
-    <FlexDivider
-      orientation="vertical"
-      v-model:wid-hgt="layout.leftWid"
-      :emitter="layout.lftEmitter"
-      ctrl-side="leftTop"
-      bg-color="white"
-      hbtn-txt="共享表格"
-      :hide-btn="true"
-      :hbtn-pos="{ bottom: '10px' }"
-      :is-hide="!layout.leftVsb"
-      @hbtn-click="() => swchBoolProp(layout, 'leftVsb')"
-    />
+    </template>
     <a-layout-content class="flex flex-col bg-white px-3">
       <a-tabs
+        v-if="!shareTable.preview.visible"
         v-model:activeKey="shareTable.selected.key"
         type="editable-card"
         @change="refresh"
         @edit="onStableTabEdit"
       >
         <template #rightExtra>
-          <a-button
-            type="link"
-            @click="
-              () =>
-                shareTable.emitter.emit('update:visible', {
-                  show: true,
-                  object: shareTable.selected
-                })
-            "
-          >
-            <template #icon><SettingOutlined /></template>
-            配置当前表格
-          </a-button>
+          <a-space>
+            <a-button type="link" @click="() => onEdtStblClick()">
+              <template #icon><SettingOutlined /></template>
+              配置表格
+            </a-button>
+            <a-button type="text" danger @click="onDelStblClick">
+              <template #icon><DeleteOutlined /></template>
+              删除表格
+            </a-button>
+            <a-button type="primary" @click="() => (shareTable.preview.visible = true)">
+              <template #icon><EyeOutlined /></template>
+              浏览
+            </a-button>
+          </a-space>
         </template>
         <a-tab-pane v-for="stable in shareTable.tables" :key="stable.key" :tab="stable.name" />
       </a-tabs>
+      <a-page-header
+        v-else
+        class="px-0 pt-0 pb-3"
+        title="返回一页表"
+        @back="() => (shareTable.preview.visible = false)"
+      >
+        <template #subTitle>
+          当前用户：
+          <a-select
+            :options="userOpns"
+            v-model:value="shareTable.preview.selUser"
+            @select="onPrevUsrSelect"
+          />
+        </template>
+        <template #extra>
+          <a-button type="primary">
+            <template #icon><ShareAltOutlined /></template>
+            查看共享表格
+          </a-button>
+        </template>
+      </a-page-header>
       <div class="flex flex-1">
         <EditableTable
           class="flex-1"
+          :bordered="false"
           ref="stableRef"
           :edit-mode="shareTable.selected.edtMod"
           :emitter="emitter"
           :api="api.shareTable.data(shareTable.selected.key)"
           :mapper="mapper"
           :columns="columns"
-          :addable="true"
-          :editable="true"
-          :delable="true"
+          :addable="shareTable.preview.tblProps.addable"
+          :editable="shareTable.preview.tblProps.edtable"
+          :edtable-keys="shareTable.preview.tblProps.edtKeys"
+          :delable="shareTable.preview.tblProps.delable"
+          :delable-keys="shareTable.preview.tblProps.delKeys"
           :new-fun="() => newObjByMapper(mapper)"
           @refresh="onDataRefresh"
         >
           <template v-for="col in columns" #[`${col.key}HD`]="{ column }: any">
-            <a-button class="p-0 border-0" type="link" @click="() => onEdtColClick(column)">
+            <a-button
+              v-if="!shareTable.preview.visible"
+              class="p-0 border-0"
+              type="link"
+              @click="() => onEdtColClick(column)"
+            >
               <template #icon><EditOutlined /></template>
               {{ column.title }}
             </a-button>
+            <template v-else>{{ column.title }}</template>
           </template>
         </EditableTable>
         <a-button
-          class="bg-[#fafafa] hover:bg-[#00000010] rounded-s-none"
+          v-if="!shareTable.preview.visible"
+          class="bg-[#fafafa] hover:bg-[#00000010] rounded-l-none"
           type="text"
           :style="{ height: shareTable.height + 'px' }"
           @click="() => addColumn.emitter.emit('update:visible', true)"
@@ -389,7 +518,7 @@ async function onEdtStblSubmit(form: STable, callback: Function) {
         <template #path="{ formState }: any">
           <div class="flex space-x-2">
             <a-cascader
-              class="flex-[3]"
+              class="flex-1"
               :options="shareTable.mapper.path.options"
               :placeholder="shareTable.mapper.path.placeholder || '请选择'"
               :value="formState.path"
@@ -397,38 +526,35 @@ async function onEdtStblSubmit(form: STable, callback: Function) {
               @change="(newVal: any) => (formState.path = newVal)"
             />
             <a-input
-              v-if="shareTable.createDir.visible"
-              class="flex-1"
-              placeholder="输入创建的目录"
-              v-model:value="shareTable.createDir.value"
+              v-if="shareTable.path.visible"
+              class="w-40"
+              placeholder="空目录不会被创建"
+              v-model:value="shareTable.path.value"
+              allow-clear
             />
-            <a-button type="primary" :ghost="!shareTable.createDir.visible" @click="onAddPathClick">
+            <a-button type="primary" :ghost="!shareTable.path.visible" @click="onAddPathClick">
               创建目录
-            </a-button>
-            <a-button
-              v-if="shareTable.createDir.visible"
-              @click="() => (shareTable.createDir.visible = false)"
-            >
-              取消
             </a-button>
           </div>
         </template>
       </FormDialog>
     </a-layout-content>
-    <FlexDivider
-      orientation="vertical"
-      v-model:wid-hgt="layout.rightWid"
-      :emitter="layout.rgtEmitter"
-      ctrl-side="rightBottom"
-      bg-color="white"
-      hbtn-txt="成员管理"
-      :hide-btn="true"
-      :is-hide="!layout.rightVsb"
-      :hbtn-pos="{ bottom: '10px' }"
-      @hbtn-click="() => swchBoolProp(layout, 'rightVsb')"
-    />
-    <a-layout-sider v-show="layout.rightVsb" theme="light" class="pl-3" :width="layout.rightWid">
-      <MemMgrList :stable="shareTable.selected" @refresh="refresh" />
-    </a-layout-sider>
+    <template v-if="!shareTable.preview.visible && shareTable.selected.usrAuth">
+      <FlexDivider
+        orientation="vertical"
+        v-model:wid-hgt="layout.rightWid"
+        :emitter="layout.rgtEmitter"
+        ctrl-side="rightBottom"
+        bg-color="white"
+        hbtn-txt="成员管理"
+        :hide-btn="true"
+        :is-hide="!layout.rightVsb"
+        :hbtn-pos="{ bottom: '10px' }"
+        @hbtn-click="() => swchBoolProp(layout, 'rightVsb')"
+      />
+      <a-layout-sider v-show="layout.rightVsb" theme="light" class="pl-3" :width="layout.rightWid">
+        <MemMgrList :stable="shareTable.selected" @refresh="refresh" />
+      </a-layout-sider>
+    </template>
   </a-layout>
 </template>

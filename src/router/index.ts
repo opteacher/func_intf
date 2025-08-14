@@ -118,8 +118,8 @@ const routes: Array<RouteRecordRaw> = [
     component: StblData
   },
   {
-    path: '/func_intf/share_table/n1',
-    name: 'share_tableTableN1',
+    path: '/func_intf/share_table/table1',
+    name: 'share_tableTable1',
     component: ShareTable1
   }
 ]

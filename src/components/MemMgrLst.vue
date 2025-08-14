@@ -2,16 +2,18 @@
 import {
   UserOutlined,
   MoreOutlined,
-  PlusOutlined,
+  UserAddOutlined,
   AppstoreAddOutlined,
   SafetyOutlined,
   EditOutlined,
   MinusCircleOutlined,
-  TeamOutlined
+  TeamOutlined,
+  DeleteOutlined,
+  ExclamationCircleOutlined
 } from '@ant-design/icons-vue'
 import StUser from '@/types/stUser'
 import { cloneDeep, difference } from 'lodash'
-import { reactive, ref, toRefs, watch } from 'vue'
+import { createVNode, reactive, ref, watch } from 'vue'
 import { TinyEmitter } from 'tiny-emitter'
 import Mapper, { BaseMapper, mapTypeTemps } from '@lib/types/mapper'
 import { compoOpns } from '@lib/types'
@@ -22,6 +24,7 @@ import Auth from '@/types/stAuth'
 import FormDialog from '@lib/components/FormDialog.vue'
 import api from '@/api'
 import NumPairLst from '@/components/NumPairLst.vue'
+import { Modal } from 'ant-design-vue'
 
 const props = defineProps({
   stable: { type: STable, required: true }
@@ -296,6 +299,18 @@ function onUserClick(user: StUser) {
     viewOnly: true
   })
 }
+function onUsrDelClick(user: StUser) {
+  Modal.confirm({
+    title: '确定删除该成员吗？',
+    icon: createVNode(ExclamationCircleOutlined),
+    content: '该成员已录入的数据不会被清空',
+    okType: 'danger',
+    onOk: async () => {
+      await api.shareTable.user(props.stable.key).remove(user)
+      emit('refresh')
+    }
+  })
+}
 </script>
 
 <template>
@@ -315,7 +330,7 @@ function onUserClick(user: StUser) {
             size="small"
             @click="() => userList.emitter.emit('update:visible', true)"
           >
-            <template #icon><PlusOutlined /></template>
+            <template #icon><UserAddOutlined /></template>
           </a-button>
           <a-dropdown>
             <template #overlay>
@@ -346,21 +361,32 @@ function onUserClick(user: StUser) {
             </a>
           </template>
           <template #avatar>
-            <a-avatar size="small">
-              <template #icon><UserOutlined /></template>
-            </a-avatar>
+            <a @click="() => onUserClick(user)">
+              <a-avatar size="small">
+                <template #icon><UserOutlined /></template>
+              </a-avatar>
+            </a>
           </template>
         </a-list-item-meta>
         <template #actions>
-          <a-button type="text" size="small" @click="() => onAuthConf(user)">
-            <template #icon><SafetyOutlined /></template>
-          </a-button>
+          <a-tooltip>
+            <template #title>用户权限</template>
+            <a-button type="text" size="small" @click="() => onAuthConf(user)">
+              <template #icon><SafetyOutlined /></template>
+            </a-button>
+          </a-tooltip>
+          <a-tooltip>
+            <template #title>删除用户</template>
+            <a-button type="text" size="small" danger @click="() => onUsrDelClick(user)">
+              <template #icon><DeleteOutlined /></template>
+            </a-button>
+          </a-tooltip>
         </template>
       </a-list-item>
     </template>
   </a-list>
   <FormDialog
-    title="添加用户"
+    title="添加成员"
     :operable="true"
     :mapper="userList.mapper"
     :emitter="userList.emitter"

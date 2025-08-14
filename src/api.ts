@@ -253,7 +253,11 @@ const expIns = {
       add: (stable: STable) => reqPost('stable', stable, { project: 'share-table' }),
       get: (tid: string) =>
         reqGet<STable>('stable', tid, { project: 'share-table', copy: STable.copy }),
-      update: (stable: any) => reqPut('stable', stable.key, stable, { project: 'share-table' }),
+      update: (stable: any) =>
+        reqPut('stable', stable.key, stable, {
+          project: 'share-table',
+          ignores: ['fkUsers', 'fkRecords']
+        }),
       remove: (stable: STable) =>
         reqDelete('stable', stable.key, { project: 'share-table', type: 'api' })
     },
@@ -363,7 +367,16 @@ const expIns = {
           action: 'count',
           type: 'api',
           axiosConfig: { params: { uid } }
-        })
+        }),
+      ownByWho: (uid: string) =>
+        reqGet<STable>('stable', tid, {
+          project: 'share-table',
+          copy: STable.copy
+        }).then(stbl =>
+          (stbl.fkRecords as StRcd[])
+            .filter(rcd => rcd.fkUser === uid)
+            .map(rcd => ({ key: rcd.key, fkUser: rcd.fkUser, ...rcd.raw }))
+        )
     })
   }
 }

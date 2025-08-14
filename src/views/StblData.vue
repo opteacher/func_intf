@@ -21,8 +21,12 @@ const router = useRouter()
 const store = useLoginStore()
 const stable = reactive<STable>(new STable())
 const emitter = new TinyEmitter()
-const mapper = ref(new Mapper())
-const columns = reactive<Column[]>([])
+const columns = computed(() =>
+  Object.entries(stable.form).map(([key, value]) =>
+    setProp(new Column(value.label, key), 'mapper', value)
+  )
+)
+const mapper = computed(() => new Mapper(stable.form))
 const login = reactive({
   form: new StUser(),
   mode: 'login' as 'login' | 'register',
@@ -54,13 +58,6 @@ onMounted(async () => {
 async function refresh() {
   STable.copy(await api.shareTable.stable.get(route.query.tid as string), stable)
   login.form.extra = newObjByMapper(stable.usrExtra)
-  columns.splice(
-    0,
-    columns.length,
-    ...Object.entries(stable.form).map(([key, value]) => new Column(value.label, key))
-  )
-  mapper.value = new Mapper(stable.form)
-  emitter.emit('update:mapper', mapper.value)
   count.value = await api.shareTable.data().count(lgnUsr.value?.key)
   rcdKeysByLgnUsr.splice(
     0,
