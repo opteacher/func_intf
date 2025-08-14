@@ -136,9 +136,7 @@ function filterDataByAuth(record: any) {
       @finish="onSubmit"
     >
       <a-form-item :wrapper-col="{ offset: 10 }">
-        <a-typography-title class="mb-0" :level="3">
-          <a href="/#/func_intf/share_table/table">共享表格</a>
-        </a-typography-title>
+        <a-page-header class="p-0" title="共享表格" :sub-title="stable.name" />
       </a-form-item>
 
       <a-form-item v-if="stable.usrReg" :wrapper-col="{ offset: 10 }">
