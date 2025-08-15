@@ -21,7 +21,6 @@ import {
   PlusOutlined,
   SettingOutlined,
   EyeOutlined,
-  DeleteOutlined,
   ShareAltOutlined
 } from '@ant-design/icons-vue'
 import { Modal } from 'ant-design-vue'
@@ -29,6 +28,7 @@ import MemMgrList from '@/components/MemMgrLst.vue'
 import TblDirTree from '@/components/TblDirTree.vue'
 import type StUser from '@/types/stUser'
 import Auth from '@/types/stAuth'
+import router from '@/router'
 
 const layout = reactive({
   rgtEmitter: new TinyEmitter(),
@@ -79,7 +79,6 @@ const shareTable = reactive({
     visible: false,
     value: ''
   },
-  height: 0,
   preview: {
     visible: false,
     selUser: 'admin',
@@ -211,6 +210,7 @@ const userOpns = computed<{ label: string; value: string }[]>(() =>
 onMounted(refresh)
 
 async function refresh(key?: string) {
+  shareTable.selected.reset()
   shareTable.tables = await api.shareTable.stable.all()
   if (key) {
     STable.copy(await api.shareTable.stable.get(key), shareTable.selected, true)
@@ -224,6 +224,7 @@ async function refresh(key?: string) {
   for (const table of shareTable.tables) {
     // console.log(table.path)
   }
+  onPrevUsrSelect('admin')
   emitter.emit('refresh')
 }
 function onMouseUp() {
@@ -245,6 +246,9 @@ function onStableTabEdit(key: string, action: string) {
       onOk: () => api.shareTable.stable.remove(STable.copy({ key })).then(() => refresh())
     })
   }
+}
+function onStablesDelete(keys: string[]) {
+  return Promise.all(keys.map(key => onStableTabEdit(key, 'delete')))
 }
 function onEdtColClick(column: any) {
   addColumn.emitter.emit('update:mprop', {
@@ -285,11 +289,6 @@ function onAddPathClick(path: string[]) {
   } else {
     shareTable.path.visible = true
   }
-}
-function onDataRefresh() {
-  nextTick(() => {
-    shareTable.height = (stableRef.value.tableRef.table.$el as HTMLElement).clientHeight
-  })
 }
 function newColumn() {
   return replaceObjProps(newOne(BaseMapper), {
@@ -332,18 +331,6 @@ function onEdtStblClick(stbl: any = shareTable.selected) {
     object: STable.copy(stbl)
   })
 }
-function onDelStblClick() {
-  Modal.confirm({
-    title: '确定删除该表格吗？',
-    icon: createVNode(ExclamationCircleOutlined),
-    content: '该表格的记录数据和成员都将被删除，请再三确认！',
-    okType: 'danger',
-    onOk: async () => {
-      await api.shareTable.stable.remove(shareTable.selected)
-      await refresh()
-    }
-  })
-}
 async function onPrevUsrSelect(key: string) {
   if (key === 'admin') {
     shareTable.preview.auth.reset()
@@ -378,6 +365,13 @@ async function onPrevUsrSelect(key: string) {
       ? shareTable.preview.rcdKeys
       : ['*']
 }
+function onShareTableClick() {
+  const url = router.resolve({
+    path: '/func_intf/share_table/data',
+    query: { tid: shareTable.selected.key, fullView: 1 }
+  })
+  window.open(url.href, '_blank')
+}
 </script>
 
 <template>
@@ -389,6 +383,7 @@ async function onPrevUsrSelect(key: string) {
           :sel-key="shareTable.selected.key"
           @update:sel-key="(key: string) => refresh(key)"
           @add-table="(obj: object) => onEdtStblClick(obj)"
+          @del-tables="onStablesDelete"
         />
       </a-layout-sider>
       <FlexDivider
@@ -412,15 +407,17 @@ async function onPrevUsrSelect(key: string) {
         @change="refresh"
         @edit="onStableTabEdit"
       >
+        <template #addIcon>
+          <a-tooltip>
+            <template #title>新增表格</template>
+            <PlusOutlined />
+          </a-tooltip>
+        </template>
         <template #rightExtra>
-          <a-space>
+          <a-space v-if="shareTable.selected.key">
             <a-button type="link" @click="() => onEdtStblClick()">
               <template #icon><SettingOutlined /></template>
               配置表格
-            </a-button>
-            <a-button type="text" danger @click="onDelStblClick">
-              <template #icon><DeleteOutlined /></template>
-              删除表格
             </a-button>
             <a-button type="primary" @click="() => (shareTable.preview.visible = true)">
               <template #icon><EyeOutlined /></template>
@@ -446,26 +443,16 @@ async function onPrevUsrSelect(key: string) {
           。如果设有权限控制，则实际有登录页面
         </template>
         <template #extra>
-          <a-popover placement="bottom" trigger="click">
-            <template #content>
-              <a-typography-link
-                :href="`/#/func_intf/share_table/data?tid=${shareTable.selected.key}&fullView=1`"
-                target="_blank"
-              >
-                点击跳转
-              </a-typography-link>
-            </template>
-            <a-button type="primary">
-              <template #icon><ShareAltOutlined /></template>
-              查看共享表格
-            </a-button>
-          </a-popover>
+          <a-button type="primary" @click="onShareTableClick">
+            <template #icon><ShareAltOutlined /></template>
+            查看共享表格
+          </a-button>
         </template>
       </a-page-header>
-      <div class="flex flex-1">
+      <div v-if="shareTable.selected.key" class="flex-1">
         <EditableTable
-          class="flex-1"
           ref="stableRef"
+          :rounded="false"
           :edit-mode="shareTable.selected.edtMod"
           :emitter="emitter"
           :api="api.shareTable.data(shareTable.selected.key)"
@@ -477,7 +464,6 @@ async function onPrevUsrSelect(key: string) {
           :delable="shareTable.preview.tblProps.delable"
           :delable-keys="shareTable.preview.tblProps.delKeys"
           :new-fun="() => newObjByMapper(mapper)"
-          @refresh="onDataRefresh"
         >
           <template v-for="col in columns" #[`${col.key}HD`]="{ column }: any">
             <a-button
@@ -491,15 +477,19 @@ async function onPrevUsrSelect(key: string) {
             </a-button>
             <template v-else>{{ column.title }}</template>
           </template>
+          <template #right>
+            <a-tooltip>
+              <template #title>添加列</template>
+              <a-button
+                v-if="!shareTable.preview.visible"
+                class="h-auto bg-[#fafafa] hover:bg-[#00000010] rounded-l-none border-l-0 border-[#f0f0f0]"
+                @click="() => addColumn.emitter.emit('update:visible', true)"
+              >
+                <template #icon><PlusOutlined /></template>
+              </a-button>
+            </a-tooltip>
+          </template>
         </EditableTable>
-        <a-button
-          v-if="!shareTable.preview.visible"
-          class="bg-[#fafafa] hover:bg-[#00000010] rounded-l-none border-l-0 border-[#f0f0f0]"
-          :style="{ height: shareTable.height + 'px' }"
-          @click="() => addColumn.emitter.emit('update:visible', true)"
-        >
-          <template #icon><PlusOutlined /></template>
-        </a-button>
       </div>
       <FormDialog
         title="添加列"
@@ -528,6 +518,7 @@ async function onPrevUsrSelect(key: string) {
         title="添加表"
         :mapper="shareTable.mapper"
         :emitter="shareTable.emitter"
+        :new-fun="() => newOne(STable)"
         @submit="onEdtStblSubmit"
       >
         <template #path="{ formState }: any">

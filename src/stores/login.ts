@@ -1,6 +1,7 @@
 import StUser from '@/types/stUser'
 import { defineStore } from 'pinia'
 import api from '@/api'
+import router from '../router'
 
 export const useLoginStore = defineStore('login', {
   state: () => ({ user: null as StUser | null }),
@@ -12,7 +13,9 @@ export const useLoginStore = defineStore('login', {
       return this.user != null
     },
     async login(user: StUser) {
-      this.user = await api.shareTable.user.login(user)
+      this.user = await api.shareTable
+        .user(router.currentRoute.value.query.tid as string)
+        .login(user)
     }
   }
 })

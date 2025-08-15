@@ -42,7 +42,7 @@ const usrAddable = computed(
 )
 const usrEdtable = computed(() => !route.query.pickMode && lgnUsr.value?.auth.updatable)
 const usrDelable = computed(() => !route.query.pickMode && lgnUsr.value?.auth.deletable)
-const rcdKeysByLgnUsr = reactive<string[]>([])
+const ownRcds = reactive<string[]>([])
 
 onMounted(async () => {
   if (!route.query.tid) {
@@ -59,9 +59,9 @@ async function refresh() {
   STable.copy(await api.shareTable.stable.get(route.query.tid as string), stable)
   login.form.extra = newObjByMapper(stable.usrExtra)
   count.value = await api.shareTable.data().count(lgnUsr.value?.key)
-  rcdKeysByLgnUsr.splice(
+  ownRcds.splice(
     0,
-    rcdKeysByLgnUsr.length,
+    ownRcds.length,
     ...(stable.fkRecords as StRcd[])
       .filter(rcd => rcd.fkUser === store.user?.key)
       .map(rcd => rcd.key)
@@ -220,9 +220,9 @@ function filterDataByAuth(record: any) {
     :columns="columns"
     :addable="usrAddable"
     :editable="usrEdtable"
-    :edtable-keys="lgnUsr?.auth.updOnlyOwn ? rcdKeysByLgnUsr : []"
+    :edtable-keys="lgnUsr?.auth.updOnlyOwn ? ownRcds : []"
     :delable="usrDelable"
-    :delable-keys="lgnUsr?.auth.delOnlyOwn ? rcdKeysByLgnUsr : []"
+    :delable-keys="lgnUsr?.auth.delOnlyOwn ? ownRcds : []"
     :new-fun="() => newObjByMapper(mapper)"
     @refresh="refresh"
   >

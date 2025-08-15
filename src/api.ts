@@ -362,12 +362,14 @@ const expIns = {
         return reqDelete('record', stRcd.key, { project: 'share-table' })
       },
       count: (uid?: string) =>
-        reqGet(`stable/${tid}/record`, undefined, {
-          project: 'share-table',
-          action: 'count',
-          type: 'api',
-          axiosConfig: { params: { uid } }
-        }),
+        tid
+          ? reqGet(`stable/${tid}/record`, undefined, {
+              project: 'share-table',
+              action: 'count',
+              type: 'api',
+              axiosConfig: { params: { uid } }
+            })
+          : 0,
       ownByWho: (uid: string) =>
         reqGet<STable>('stable', tid, {
           project: 'share-table',

@@ -13,7 +13,7 @@ import {
 } from '@ant-design/icons-vue'
 import StUser from '@/types/stUser'
 import { cloneDeep, difference } from 'lodash'
-import { createVNode, reactive, ref, watch } from 'vue'
+import { createVNode, onMounted, reactive, ref, watch } from 'vue'
 import { TinyEmitter } from 'tiny-emitter'
 import Mapper, { BaseMapper, mapTypeTemps } from '@lib/types/mapper'
 import { compoOpns } from '@lib/types'
@@ -193,26 +193,24 @@ const extraForm = ref()
 const baseMapper = new BaseMapper()
 const extraMkeys = Object.keys(userExtra.mapper)
 
-watch(
-  () => props.stable.usrExtra,
-  () => {
-    userList.emitter.emit('update:mprop', {
-      'extra.display': Object.keys(props.stable.usrExtra).length !== 0,
-      'extra.items': props.stable.usrExtra
-    })
-    userExtra.emitter.emit(
-      'update:mprop',
-      Object.fromEntries(
-        Object.entries(props.stable.usrExtra).map(([key, val]) => [
-          key,
-          { ...pickOrIgnore(val, ['rules']), disabled: true }
-        ])
-      )
-    )
-  },
-  { deep: true }
-)
+onMounted(refresh)
+watch(() => props.stable.usrExtra, refresh, { deep: true })
 
+function refresh() {
+  userList.emitter.emit('update:mprop', {
+    'extra.display': Object.keys(props.stable.usrExtra).length !== 0,
+    'extra.items': new Mapper(props.stable.usrExtra)
+  })
+  userExtra.emitter.emit(
+    'update:mprop',
+    Object.fromEntries(
+      Object.entries(props.stable.usrExtra).map(([key, val]) => [
+        key,
+        { ...pickOrIgnore(val, ['rules']), disabled: true }
+      ])
+    )
+  )
+}
 function onAddExtPropCancel() {
   userExtra.emitter.emit('update:mprop', {
     'addProp.display': true,
@@ -328,7 +326,7 @@ function onUsrDelClick(user: StUser) {
             type="primary"
             ghost
             size="small"
-            @click="() => userList.emitter.emit('update:visible', true)"
+            @click="() => userList.emitter.emit('update:visible', { show: true, viewOnly: false })"
           >
             <template #icon><UserAddOutlined /></template>
           </a-button>
