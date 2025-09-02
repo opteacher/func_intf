@@ -29,6 +29,7 @@ import TblDirTree from '@/components/TblDirTree.vue'
 import type StUser from '@/types/stUser'
 import Auth from '@/types/stAuth'
 import router from '@/router'
+import { operDict } from '@/types/stOpLog'
 
 const layout = reactive({
   rgtEmitter: new TinyEmitter(),
@@ -105,10 +106,11 @@ const shareTable = reactive({
         }
       }
     }
-  }
+  },
+  type: 'data' as 'data' | 'opLog'
 })
 const emitter = new TinyEmitter()
-const columns = computed(() =>
+const columns = computed<Column[]>(() =>
   Object.entries(shareTable.selected.form).map(([key, value]) =>
     setProp(new Column(value.label, key), 'mapper', value)
   )
@@ -451,8 +453,39 @@ function onShareTableClick() {
       </a-page-header>
       <div v-if="shareTable.selected.key" class="flex-1">
         <EditableTable
+          v-if="shareTable.type === 'opLog'"
+          thd-class="px-0 py-2"
+          :api="api.shareTable.opLog(shareTable.selected.key)"
+          :columns="[
+            new Column('用户', 'fkUser'),
+            new Column('操作类型', 'otype'),
+            new Column('操作对象', 'okey'),
+            new Column('记录', 'record')
+          ]"
+          :emitter="emitter"
+          :addable="false"
+          :editable="false"
+          :delable="false"
+        >
+          <template #title>
+            <a-radio-group v-model:value="shareTable.type" @change="() => emitter.emit('refresh')">
+              <a-radio-button value="data">数据表</a-radio-button>
+              <a-radio-button value="opLog">操作日志</a-radio-button>
+            </a-radio-group>
+          </template>
+          <template #otype="{ record }: any">
+            <a-tag :color="operDict[record.otype].color">{{ operDict[record.otype].label }}</a-tag>
+          </template>
+          <template #fkUser="{ record }: any">
+            {{ record.fkUser ? record.fkUser.lgnIden : '管理员' }}
+          </template>
+        </EditableTable>
+        <EditableTable
+          v-else
+          thd-class="px-0 py-2"
           ref="stableRef"
           :rounded="false"
+          :im-export="true"
           :edit-mode="shareTable.selected.edtMod"
           :emitter="emitter"
           :api="api.shareTable.data(shareTable.selected.key)"
@@ -465,6 +498,12 @@ function onShareTableClick() {
           :delable-keys="shareTable.preview.tblProps.delKeys"
           :new-fun="() => newObjByMapper(mapper)"
         >
+          <template #title>
+            <a-radio-group v-model:value="shareTable.type" @change="() => emitter.emit('refresh')">
+              <a-radio-button value="data">数据表</a-radio-button>
+              <a-radio-button value="opLog">操作日志</a-radio-button>
+            </a-radio-group>
+          </template>
           <template v-for="col in columns" #[`${col.key}HD`]="{ column }: any">
             <a-button
               v-if="!shareTable.preview.visible"

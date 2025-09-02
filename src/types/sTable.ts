@@ -5,6 +5,7 @@ import StRcd from './stRecord'
 import { Cond } from '@lib/types'
 import { cloneDeep } from 'lodash'
 import Auth from './stAuth'
+import StOpLog from './stOpLog'
 
 export default class STable {
   key: string
@@ -18,6 +19,7 @@ export default class STable {
   tempAuth: Auth
   fkUsers: (StUser | string)[]
   fkRecords: (StRcd | string)[]
+  fkOplogs: (StOpLog | string)[]
 
   constructor() {
     this.key = ''
@@ -31,6 +33,7 @@ export default class STable {
     this.tempAuth = new Auth()
     this.fkUsers = []
     this.fkRecords = []
+    this.fkOplogs = []
   }
 
   reset() {
@@ -45,39 +48,26 @@ export default class STable {
     this.tempAuth = new Auth()
     this.fkUsers = []
     this.fkRecords = []
+    this.fkOplogs = []
   }
 
   static copy(src: any, tgt?: STable, force = false): STable {
-    tgt = gnlCpy(STable, src, tgt, {
+    return gnlCpy(STable, src, tgt, {
       force,
       cpyMapper: {
         usrExtra: cloneDeep,
-        tempAuth: Auth.copy
-      },
-      ignProps: ['fkUsers', 'fkRecords']
+        tempAuth: Auth.copy,
+        fkUsers: StUser.copy,
+        fkRecords: StRcd.copy,
+        fkOpLogs: StOpLog.copy
+      }
     })
-    if (src.fkUsers && src.fkUsers.length) {
-      tgt.fkUsers =
-        typeof src.fkUsers[0] === 'string'
-          ? [...src.fkUsers]
-          : src.fkUsers.map((usr: any) => StUser.copy(usr))
-    } else if (force) {
-      ;(tgt as STable).fkUsers = []
-    }
-    if (src.fkRecords && src.fkRecords.length) {
-      tgt.fkRecords =
-        typeof src.fkRecords[0] === 'string'
-          ? [...src.fkRecords]
-          : src.fkRecords.map((usr: any) => StRcd.copy(usr))
-    } else if (force) {
-      ;(tgt as STable).fkRecords = []
-    }
-    return tgt as STable
   }
 }
 
 export const avaCmpTypes = [
   'Input',
+  'IpAddress',
   'Number',
   'Textarea',
   'Select',
@@ -125,6 +115,7 @@ export const extraDict = {
       placeholder: '输入输入框后缀'
     }
   },
+  IpAddress: {},
   Number: {
     prefix: {
       type: 'Input',

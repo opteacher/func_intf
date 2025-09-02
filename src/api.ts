@@ -28,6 +28,7 @@ import StUser from './types/stUser'
 import StRcd from './types/stRecord'
 import { useLoginStore } from './stores/login'
 import Auth from '@/types/stAuth'
+import StOpLog from './types/stOpLog'
 
 const gpusHost = '38.155.60.235'
 const appsHost = '38.152.2.152'
@@ -330,6 +331,11 @@ const expIns = {
           true,
           { project: 'share-table' }
         )
+        await expIns.shareTable.opLog(tid).add({
+          otype: 'add',
+          okey: newRcd.key,
+          latter: raw
+        })
         const store = useLoginStore()
         if (store.user?.key) {
           await reqLink(
@@ -343,13 +349,26 @@ const expIns = {
         }
         return newRcd
       },
-      update: (record: any) =>
-        reqPut(
+      update: async (record: any) => {
+        const fmrRcd = await reqGet<StRcd>('record', record.key, {
+          project: 'share-table',
+          copy: StRcd.copy
+        })
+        const raw = pickOrIgnore(record, ['key'], true)
+        const ret = await reqPut<StRcd>(
           'record',
           record.key,
-          { raw: pickOrIgnore(record, ['key'], true) },
-          { project: 'share-table' }
-        ),
+          { raw },
+          { project: 'share-table', copy: StRcd.copy }
+        )
+        await expIns.shareTable.opLog(tid).add({
+          otype: 'update',
+          okey: record.key,
+          former: fmrRcd.raw,
+          latter: raw
+        })
+        return ret
+      },
       remove: async (stRcd: StRcd) => {
         await reqLink(
           {
@@ -359,7 +378,13 @@ const expIns = {
           false,
           { project: 'share-table' }
         )
-        return reqDelete('record', stRcd.key, { project: 'share-table' })
+        const ret = await reqDelete('record', stRcd.key, { project: 'share-table' })
+        await expIns.shareTable.opLog(tid).add({
+          otype: 'delete',
+          okey: stRcd.key,
+          former: stRcd.raw
+        })
+        return ret
       },
       count: (uid?: string) =>
         tid
@@ -379,6 +404,40 @@ const expIns = {
             .filter(rcd => rcd.fkUser === uid)
             .map(rcd => ({ key: rcd.key, fkUser: rcd.fkUser, ...rcd.raw }))
         )
+    }),
+    opLog: (tid = router.currentRoute.value.query.tid as string) => ({
+      all: () =>
+        reqAll<StOpLog>(`stable/${tid}/opLog`, {
+          type: 'api',
+          project: 'share-table',
+          copy: StOpLog.copy
+        }),
+      add: async (log: any) => {
+        const opLog = await reqPost<StOpLog>(
+          'opLog',
+          { ...log, tkey: tid },
+          {
+            project: 'share-table',
+            copy: StOpLog.copy,
+            ignores: ['fkUser']
+          }
+        )
+        const store = useLoginStore()
+        if (store.user?.key) {
+          await reqLink(
+            {
+              parent: ['opLog', opLog.key],
+              child: ['fkUser', store.user?.key]
+            },
+            true,
+            { project: 'share-table' }
+          )
+        }
+        return opLog
+      },
+      remove: (log: StOpLog) => {
+        return reqDelete('opLog', log.key, { project: 'share-table' })
+      }
     })
   }
 }
