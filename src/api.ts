@@ -40,6 +40,7 @@ export const chatGlmURL = import.meta.env.PROD ? `http://${appsHost}:8441` : und
 export const mqttHost = import.meta.env.PROD ? appsHost : testHost
 export const ado2WdsURL = import.meta.env.PROD ? `http://${gpusHost}:5111` : ''
 export const mgcPdfURL = import.meta.env.PROD ? `http://${gpusHost}:3290` : ''
+export const stableURL = import.meta.env.PROD ? `http://${appsHost}:4727` : ''
 
 const toolOpns = {
   project: 'tools_box',
@@ -65,6 +66,10 @@ const mgcPdfOpns = {
   project: 'magic_pdf_apis',
   axiosConfig: { baseURL: mgcPdfURL }
 } as RequestOptions
+const stblOpns = {
+  project: 'share-table',
+  axiosConfig: { baseURL: stableURL }
+}
 
 const bindLgnTkn = (): RequestOptions => {
   ;(secretOpns.axiosConfig as AxiosRequestConfig<any>).headers = {
@@ -250,22 +255,20 @@ const expIns = {
   },
   shareTable: {
     stable: {
-      all: () => reqAll<STable>('stable', { project: 'share-table', copy: STable.copy }),
-      add: (stable: STable) => reqPost('stable', stable, { project: 'share-table' }),
-      get: (tid: string) =>
-        reqGet<STable>('stable', tid, { project: 'share-table', copy: STable.copy }),
+      all: () => reqAll<STable>('stable', { ...stblOpns, copy: STable.copy }),
+      add: (stable: STable) => reqPost('stable', stable, stblOpns),
+      get: (tid: string) => reqGet<STable>('stable', tid, { ...stblOpns, copy: STable.copy }),
       update: (stable: any) =>
         reqPut('stable', stable.key, stable, {
-          project: 'share-table',
+          ...stblOpns,
           ignores: ['fkUsers', 'fkRecords']
         }),
-      remove: (stable: STable) =>
-        reqDelete('stable', stable.key, { project: 'share-table', type: 'api' })
+      remove: (stable: STable) => reqDelete('stable', stable.key, { ...stblOpns, type: 'api' })
     },
     user: (tid = router.currentRoute.value.query.tid as string) => ({
       all: () =>
         reqGet<STable>('stable', tid, {
-          project: 'share-table',
+          ...stblOpns,
           copy: STable.copy
         }).then(stbl => stbl.fkUsers as StUser[]),
       add: async (stUser: StUser, auth?: Auth) => {
@@ -282,14 +285,14 @@ const expIns = {
             auth: tempAuth
           },
           {
+            ...stblOpns,
             type: 'api',
             action: 'register',
-            project: 'share-table',
             copy: StUser.copy
           }
         )
       },
-      update: (stUser: any) => reqPut('user', stUser.key, stUser, { project: 'share-table' }),
+      update: (stUser: any) => reqPut('user', stUser.key, stUser, stblOpns),
       remove: async (stUser: StUser) => {
         await reqLink(
           {
@@ -297,13 +300,13 @@ const expIns = {
             child: ['fkUsers', stUser.key]
           },
           false,
-          { project: 'share-table' }
+          stblOpns
         )
-        return reqDelete('user', stUser.key, { project: 'share-table' })
+        return reqDelete('user', stUser.key, stblOpns)
       },
       login: (stUser: StUser) =>
         reqPost(`stable/${tid}/user`, stUser, {
-          project: 'share-table',
+          ...stblOpns,
           action: 'login',
           type: 'api',
           copy: StUser.copy
@@ -312,24 +315,20 @@ const expIns = {
     data: (tid = router.currentRoute.value.query.tid as string) => ({
       all: () =>
         reqGet<STable>('stable', tid, {
-          project: 'share-table',
+          ...stblOpns,
           copy: STable.copy
         }).then(stbl =>
           (stbl.fkRecords as StRcd[]).map(rcd => ({ key: rcd.key, fkUser: rcd.fkUser, ...rcd.raw }))
         ),
       add: async (raw: any) => {
-        const newRcd = await reqPost<StRcd>(
-          'record',
-          { raw },
-          { project: 'share-table', copy: StRcd.copy }
-        )
+        const newRcd = await reqPost<StRcd>('record', { raw }, { ...stblOpns, copy: StRcd.copy })
         await reqLink(
           {
             parent: ['stable', tid],
             child: ['fkRecords', newRcd.key]
           },
           true,
-          { project: 'share-table' }
+          stblOpns
         )
         await expIns.shareTable.opLog(tid).add({
           otype: 'add',
@@ -344,14 +343,14 @@ const expIns = {
               child: ['fkUser', store.user?.key]
             },
             true,
-            { project: 'share-table' }
+            stblOpns
           )
         }
         return newRcd
       },
       update: async (record: any) => {
         const fmrRcd = await reqGet<StRcd>('record', record.key, {
-          project: 'share-table',
+          ...stblOpns,
           copy: StRcd.copy
         })
         const raw = pickOrIgnore(record, ['key'], true)
@@ -359,7 +358,7 @@ const expIns = {
           'record',
           record.key,
           { raw },
-          { project: 'share-table', copy: StRcd.copy }
+          { ...stblOpns, copy: StRcd.copy }
         )
         await expIns.shareTable.opLog(tid).add({
           otype: 'update',
@@ -376,9 +375,9 @@ const expIns = {
             child: ['fkRecords', stRcd.key]
           },
           false,
-          { project: 'share-table' }
+          stblOpns
         )
-        const ret = await reqDelete('record', stRcd.key, { project: 'share-table' })
+        const ret = await reqDelete('record', stRcd.key, stblOpns)
         await expIns.shareTable.opLog(tid).add({
           otype: 'delete',
           okey: stRcd.key,
@@ -392,12 +391,12 @@ const expIns = {
               project: 'share-table',
               action: 'count',
               type: 'api',
-              axiosConfig: { params: { uid } }
+              axiosConfig: { baseURL: stableURL, params: { uid } }
             })
           : 0,
       ownByWho: (uid: string) =>
         reqGet<STable>('stable', tid, {
-          project: 'share-table',
+          ...stblOpns,
           copy: STable.copy
         }).then(stbl =>
           (stbl.fkRecords as StRcd[])
@@ -408,8 +407,8 @@ const expIns = {
     opLog: (tid = router.currentRoute.value.query.tid as string) => ({
       all: () =>
         reqAll<StOpLog>(`stable/${tid}/opLog`, {
+          ...stblOpns,
           type: 'api',
-          project: 'share-table',
           copy: StOpLog.copy
         }),
       add: async (log: any) => {
@@ -417,7 +416,7 @@ const expIns = {
           'opLog',
           { ...log, tkey: tid },
           {
-            project: 'share-table',
+            ...stblOpns,
             copy: StOpLog.copy,
             ignores: ['fkUser']
           }
@@ -430,13 +429,13 @@ const expIns = {
               child: ['fkUser', store.user?.key]
             },
             true,
-            { project: 'share-table' }
+            stblOpns
           )
         }
         return opLog
       },
       remove: (log: StOpLog) => {
-        return reqDelete('opLog', log.key, { project: 'share-table' })
+        return reqDelete('opLog', log.key, stblOpns)
       }
     })
   }

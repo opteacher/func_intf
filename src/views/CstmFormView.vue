@@ -68,7 +68,7 @@ async function onSubmit(data: any) {
 }
 function genEmptyForm() {
   return Object.fromEntries(
-    Object.entries(mapper.value).map(([key, val]) => [key, fieldDftVal(val.type)])
+    Object.entries(mapper.value).map(([key, val]) => [key, fieldDftVal(val.type as any)])
   )
 }
 function onFpropUpdate(values: Record<string, any>) {

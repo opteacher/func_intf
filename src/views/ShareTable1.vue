@@ -223,9 +223,6 @@ async function refresh(key?: string) {
       true
     )
   }
-  for (const table of shareTable.tables) {
-    // console.log(table.path)
-  }
   onPrevUsrSelect('admin')
   emitter.emit('refresh')
 }
@@ -459,8 +456,8 @@ function onShareTableClick() {
           :columns="[
             new Column('用户', 'fkUser'),
             new Column('操作类型', 'otype'),
-            new Column('操作对象', 'okey'),
-            new Column('记录', 'record')
+            new Column('操作前记录', 'former'),
+            new Column('操作后记录', 'latter')
           ]"
           :emitter="emitter"
           :addable="false"
@@ -478,6 +475,9 @@ function onShareTableClick() {
           </template>
           <template #fkUser="{ record }: any">
             {{ record.fkUser ? record.fkUser.lgnIden : '管理员' }}
+          </template>
+          <template #former="{ record }: any">
+            <pre class="whitespace-pre-wrap break-words">{{ record.former }}</pre>
           </template>
         </EditableTable>
         <EditableTable
