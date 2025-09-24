@@ -485,7 +485,7 @@ function onShareTableClick() {
           thd-class="px-0 py-2"
           ref="stableRef"
           :rounded="false"
-          :im-export="true"
+          :im-export="{ uploadUrl: '/share-table/api/v1/excel/upload' }"
           :edit-mode="shareTable.selected.edtMod"
           :emitter="emitter"
           :api="api.shareTable.data(shareTable.selected.key)"
