@@ -392,8 +392,8 @@ const expIns = {
               action: 'count',
               type: 'api',
               axiosConfig: { baseURL: stableURL, params: { uid } }
-            })
-          : 0,
+            }).then(data => parseInt(data))
+          : Promise.resolve(0),
       ownByWho: (uid: string) =>
         reqGet<STable>('stable', tid, {
           ...stblOpns,

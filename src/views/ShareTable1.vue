@@ -477,7 +477,10 @@ function onShareTableClick() {
             {{ record.fkUser ? record.fkUser.lgnIden : '管理员' }}
           </template>
           <template #former="{ record }: any">
-            <pre class="whitespace-pre-wrap break-words">{{ record.former }}</pre>
+            <pre class="whitespace-pre-wrap break-words">{{ JSON.stringify(record.former) }}</pre>
+          </template>
+          <template #latter="{ record }: any">
+            <pre class="whitespace-pre-wrap break-words">{{ JSON.stringify(record.latter) }}</pre>
           </template>
         </EditableTable>
         <EditableTable
@@ -516,12 +519,13 @@ function onShareTableClick() {
             </a-button>
             <template v-else>{{ column.title }}</template>
           </template>
-          <template #right>
+          <template #right="{ height }: any">
             <a-tooltip>
               <template #title>添加列</template>
               <a-button
                 v-if="!shareTable.preview.visible"
-                class="h-auto bg-[#fafafa] hover:bg-[#00000010] rounded-l-none border-l-0 border-[#f0f0f0]"
+                class="bg-[#fafafa] hover:bg-[#00000010] rounded-l-none border-l-0 border-[#f0f0f0]"
+                :style="{ height: height + 'px' }"
                 @click="() => addColumn.emitter.emit('update:visible', true)"
               >
                 <template #icon><PlusOutlined /></template>
