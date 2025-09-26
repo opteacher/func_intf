@@ -1,7 +1,7 @@
 <template>
   <EditableTable
     :api="{
-      all: () => []
+      all: async () => []
     }"
     :columns="columns"
   />
