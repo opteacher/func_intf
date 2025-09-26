@@ -352,6 +352,7 @@ async function onBatImpUsrSubmit(info: BatImp) {
       record => !Object.entries(reqDict).some(([prop, required]) => required && !record[prop])
     )
   await Promise.all(users.map(user => api.shareTable.user(props.stable.key).add(user)))
+  emit('refresh')
 }
 </script>
 

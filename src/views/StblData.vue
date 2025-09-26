@@ -226,25 +226,10 @@ function filterDataByAuth(record: any) {
     :new-fun="() => newObjByMapper(mapper)"
     @refresh="refresh"
   >
-    <template #description>
-      <a-breadcrumb class="inline-block">
-        <a-breadcrumb-item><a href="/#/func_intf/share_table/table">共享表格</a></a-breadcrumb-item>
-        <a-breadcrumb-item>
-          数据表浏览
-          <template #overlay>
-            <a-menu>
-              <a-menu-item>
-                <a :href="`/#/func_intf/share_table/user?tid=${route.query.tid}`">成员管理</a>
-              </a-menu-item>
-            </a-menu>
-          </template>
-        </a-breadcrumb-item>
-      </a-breadcrumb>
-    </template>
     <template v-if="stable.usrAuth && !route.query.pickMode" #extra>
       <a-button type="text">
         <template #icon><UserOutlined /></template>
-        {{ lgnUsr?.lgnIden }}
+        {{ lgnUsr?.nickName }}
       </a-button>
       <a-tooltip>
         <template #title>登出</template>

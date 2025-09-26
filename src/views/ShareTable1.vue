@@ -485,13 +485,15 @@ function onShareTableClick() {
             <a-tag :color="operDict[record.otype].color">{{ operDict[record.otype].label }}</a-tag>
           </template>
           <template #fkUser="{ record }: any">
-            {{ record.fkUser ? record.fkUser.lgnIden : '管理员' }}
+            {{ record.fkUser || '管理员' }}
           </template>
           <template #former="{ record }: any">
-            <pre class="whitespace-pre-wrap break-words">{{ JSON.stringify(record.former) }}</pre>
+            <template v-if="!record.former">无</template>
+            <pre v-else class="whitespace-pre-wrap break-words">{{ JSON.stringify(record.former) }}</pre>
           </template>
           <template #latter="{ record }: any">
-            <pre class="whitespace-pre-wrap break-words">{{ JSON.stringify(record.latter) }}</pre>
+            <template v-if="!record.latter">无</template>
+            <pre v-else class="whitespace-pre-wrap break-words">{{ JSON.stringify(record.latter) }}</pre>
           </template>
         </EditableTable>
         <EditableTable
@@ -628,7 +630,7 @@ function onShareTableClick() {
         @hbtn-click="() => swchBoolProp(layout, 'rightVsb')"
       />
       <a-layout-sider v-show="layout.rightVsb" theme="light" class="pl-3" :width="layout.rightWid">
-        <MemMgrList :stable="shareTable.selected" @refresh="refresh" />
+        <MemMgrList :stable="shareTable.selected" @refresh="() => refresh(shareTable.selected.key)" />
       </a-layout-sider>
     </template>
   </a-layout>
