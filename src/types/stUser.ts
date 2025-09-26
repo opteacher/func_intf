@@ -4,6 +4,7 @@ import Auth from './stAuth'
 export default class StUser {
   key: string
   lgnIden: string // 登录标识
+  nickName: string
   password: string
   repeatPwd: string
   extra: object
@@ -12,6 +13,7 @@ export default class StUser {
   constructor() {
     this.key = ''
     this.lgnIden = ''
+    this.nickName = ''
     this.password = ''
     this.repeatPwd = ''
     this.extra = {}
@@ -21,6 +23,7 @@ export default class StUser {
   reset() {
     this.key = ''
     this.lgnIden = ''
+    this.nickName = ''
     this.password = ''
     this.repeatPwd = ''
     this.extra = {}

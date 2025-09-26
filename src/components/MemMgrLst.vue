@@ -9,11 +9,12 @@ import {
   MinusCircleOutlined,
   TeamOutlined,
   DeleteOutlined,
-  ExclamationCircleOutlined
+  ExclamationCircleOutlined,
+  UsergroupAddOutlined
 } from '@ant-design/icons-vue'
 import StUser from '@/types/stUser'
 import { cloneDeep, difference } from 'lodash'
-import { createVNode, onMounted, reactive, ref, watch } from 'vue'
+import { computed, createVNode, onMounted, reactive, ref, watch } from 'vue'
 import { TinyEmitter } from 'tiny-emitter'
 import Mapper, { BaseMapper, mapTypeTemps } from '@lib/types/mapper'
 import { compoOpns } from '@lib/types'
@@ -25,6 +26,10 @@ import FormDialog from '@lib/components/FormDialog.vue'
 import api from '@/api'
 import NumPairLst from '@/components/NumPairLst.vue'
 import { Modal } from 'ant-design-vue'
+import BatImpBox from '@lib/components/BatImpBox.vue'
+import Column from '@lib/types/column'
+import type BatImp from '@lib/types/batImp'
+import { utils, type WorkSheet } from 'xlsx'
 
 const props = defineProps({
   stable: { type: STable, required: true }
@@ -38,6 +43,11 @@ const userList = reactive({
       label: '登录标识',
       placeholder: '请输入登录标识',
       rules: [{ required: true, message: '必须给出登录标识！该项用于用户登录' }]
+    },
+    nickName: {
+      type: 'Input',
+      label: '昵称',
+      placeholder: '请输入昵称'
     },
     password: {
       type: 'Password',
@@ -53,6 +63,12 @@ const userList = reactive({
   }),
   formState: new StUser()
 })
+const columns = computed(() =>
+  Object.entries(userList.mapper)
+    .filter(([key]) => key !== 'extra')
+    .concat(Object.entries(userList.mapper['extra'].items || {}))
+    .map(([key, value]) => new Column(value.label, key))
+)
 const authTable = reactive({
   visible: false,
   columns: [
@@ -309,19 +325,63 @@ function onUsrDelClick(user: StUser) {
     }
   })
 }
+async function onBatImpUsrSubmit(info: BatImp) {
+  const worksheet = info.worksheet as WorkSheet
+  const records = utils.sheet_to_json<any[]>(worksheet, { header: 1 })
+  const header = records[info.hdRowNo]
+  const dict = Object.entries(info.mapper)
+  const colDict = dict.map(([key, value]) => [header.indexOf(key), value.prop]) as [
+    number,
+    string
+  ][]
+  const reqDict = Object.fromEntries(dict.map(([_colNam, prop]) => [prop.prop, prop.required]))
+  const users = records
+    .slice(info.dtRowNo)
+    .map(record =>
+      Object.fromEntries(
+        colDict.map(([idx, prop]) => {
+          if (reqDict[prop]) {
+            return record[idx] ? [prop, record[idx]] : [prop]
+          } else {
+            return [prop, record[idx]]
+          }
+        })
+      )
+    )
+    .filter(
+      record => !Object.entries(reqDict).some(([prop, required]) => required && !record[prop])
+    )
+  await Promise.all(users.map(user => api.shareTable.user(props.stable.key).add(user)))
+}
 </script>
 
 <template>
-  <a-list item-layout="horizontal" size="small" :data-source="stable.fkUsers">
-    <template #header>
-      <a-page-header class="p-0">
-        <template #avatar>
-          <TeamOutlined class="text-xl mr-1" />
-        </template>
-        <template #title>
-          <a-typography-title class="mb-0" :level="5">成员管理</a-typography-title>
-        </template>
-        <template #extra>
+  <div class="h-full flex flex-col">
+    <a-page-header class="p-0">
+      <template #avatar>
+        <TeamOutlined class="text-xl mr-1" />
+      </template>
+      <template #title>
+        <a-typography-title class="mb-0" :level="5">成员管理</a-typography-title>
+      </template>
+      <template #extra>
+        <BatImpBox
+          uploadUrl="/share-table/api/v1/file/upload"
+          :columns="columns"
+          :copyFun="StUser.copy"
+          @submit="onBatImpUsrSubmit"
+        >
+          <template #button>
+            <a-tooltip>
+              <template #title>批量导入成员</template>
+              <a-button size="small" @click.prevent>
+                <template #icon><UsergroupAddOutlined /></template>
+              </a-button>
+            </a-tooltip>
+          </template>
+        </BatImpBox>
+        <a-tooltip>
+          <template #title>添加成员</template>
           <a-button
             type="primary"
             ghost
@@ -330,59 +390,68 @@ function onUsrDelClick(user: StUser) {
           >
             <template #icon><UserAddOutlined /></template>
           </a-button>
-          <a-dropdown>
-            <template #overlay>
-              <a-menu @click="onMoreClick">
-                <a-menu-item key="extra">
-                  <AppstoreAddOutlined />
-                  额外信息
-                </a-menu-item>
-                <a-menu-item key="auth">
-                  <SafetyOutlined />
-                  模板权限
-                </a-menu-item>
-              </a-menu>
+        </a-tooltip>
+        <a-dropdown>
+          <template #overlay>
+            <a-menu @click="onMoreClick">
+              <a-menu-item key="extra">
+                <AppstoreAddOutlined />
+                额外信息
+              </a-menu-item>
+              <a-menu-item key="auth">
+                <SafetyOutlined />
+                模板权限
+              </a-menu-item>
+            </a-menu>
+          </template>
+          <a-button size="small">
+            <template #icon><MoreOutlined /></template>
+          </a-button>
+        </a-dropdown>
+      </template>
+    </a-page-header>
+    <div class="flex-1 relative overflow-hidden">
+      <a-list
+        class="absolute top-0 left-0 bottom-0 right-0 overflow-auto"
+        item-layout="horizontal"
+        size="small"
+        :data-source="stable.fkUsers"
+      >
+        <template #renderItem="{ item: user }">
+          <a-list-item class="px-0">
+            <a-list-item-meta :description="user.nickName">
+              <template #title>
+                <a @click="() => onUserClick(user)">
+                  <b>{{ user.lgnIden }}</b>
+                </a>
+              </template>
+              <template #avatar>
+                <a @click="() => onUserClick(user)">
+                  <a-avatar>
+                    <template #icon><UserOutlined /></template>
+                  </a-avatar>
+                </a>
+              </template>
+            </a-list-item-meta>
+            <template #actions>
+              <a-tooltip>
+                <template #title>用户权限</template>
+                <a-button type="text" size="small" @click="() => onAuthConf(user)">
+                  <template #icon><SafetyOutlined /></template>
+                </a-button>
+              </a-tooltip>
+              <a-tooltip>
+                <template #title>删除用户</template>
+                <a-button type="text" size="small" danger @click="() => onUsrDelClick(user)">
+                  <template #icon><DeleteOutlined /></template>
+                </a-button>
+              </a-tooltip>
             </template>
-            <a-button size="small">
-              <template #icon><MoreOutlined /></template>
-            </a-button>
-          </a-dropdown>
+          </a-list-item>
         </template>
-      </a-page-header>
-    </template>
-    <template #renderItem="{ item: user }">
-      <a-list-item class="px-0">
-        <a-list-item-meta>
-          <template #title>
-            <a @click="() => onUserClick(user)">
-              <b>{{ user.lgnIden }}</b>
-            </a>
-          </template>
-          <template #avatar>
-            <a @click="() => onUserClick(user)">
-              <a-avatar size="small">
-                <template #icon><UserOutlined /></template>
-              </a-avatar>
-            </a>
-          </template>
-        </a-list-item-meta>
-        <template #actions>
-          <a-tooltip>
-            <template #title>用户权限</template>
-            <a-button type="text" size="small" @click="() => onAuthConf(user)">
-              <template #icon><SafetyOutlined /></template>
-            </a-button>
-          </a-tooltip>
-          <a-tooltip>
-            <template #title>删除用户</template>
-            <a-button type="text" size="small" danger @click="() => onUsrDelClick(user)">
-              <template #icon><DeleteOutlined /></template>
-            </a-button>
-          </a-tooltip>
-        </template>
-      </a-list-item>
-    </template>
-  </a-list>
+      </a-list>
+    </div>
+  </div>
   <FormDialog
     title="添加成员"
     :operable="true"

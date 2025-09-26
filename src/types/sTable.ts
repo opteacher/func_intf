@@ -6,6 +6,7 @@ import { Cond } from '@lib/types'
 import { cloneDeep } from 'lodash'
 import Auth from './stAuth'
 import StOpLog from './stOpLog'
+import type { SizeType } from 'ant-design-vue/es/config-provider'
 
 export default class STable {
   key: string
@@ -15,6 +16,7 @@ export default class STable {
   edtMod: 'form' | 'direct' // 表单类型
   usrAuth: boolean // 是否需要用户权限
   usrReg: boolean // 允许用户自己注册
+  size: SizeType
   usrExtra: Mapper
   tempAuth: Auth
   fkUsers: (StUser | string)[]
@@ -29,6 +31,7 @@ export default class STable {
     this.edtMod = 'direct' // 默认是直接类型
     this.usrAuth = false // 默认不需要用户权限
     this.usrReg = false
+    this.size = undefined
     this.usrExtra = new Mapper()
     this.tempAuth = new Auth()
     this.fkUsers = []
@@ -44,6 +47,7 @@ export default class STable {
     this.edtMod = 'direct' // 默认是直接类型
     this.usrAuth = false
     this.usrReg = false
+    this.size = undefined
     this.usrExtra = new Mapper()
     this.tempAuth = new Auth()
     this.fkUsers = []

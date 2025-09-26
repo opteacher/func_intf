@@ -62,6 +62,15 @@ const shareTable = reactive({
         { label: '表单修改', value: 'form' }
       ]
     },
+    size: {
+      type: 'Radio',
+      label: '尺寸',
+      options: [
+        { label: '大', value: 'large' },
+        { label: '中', value: 'middle' },
+        { label: '小', value: 'small' }
+      ]
+    },
     usrAuth: {
       type: 'Switch',
       label: '用户授权',
@@ -135,6 +144,7 @@ const addColumn = reactive({
       label: '唯一标识',
       placeholder: '输入标识（英文）',
       rules: [{ required: true, message: '必须填写标识！' }],
+      disabled: (form: any) => form.key in shareTable.selected.form,
       onChange: onAddColChange
     },
     type: {
@@ -452,6 +462,7 @@ function onShareTableClick() {
         <EditableTable
           v-if="shareTable.type === 'opLog'"
           thd-class="px-0 py-2"
+          size="small"
           :api="api.shareTable.opLog(shareTable.selected.key)"
           :columns="[
             new Column('用户', 'fkUser'),
@@ -488,7 +499,11 @@ function onShareTableClick() {
           thd-class="px-0 py-2"
           ref="stableRef"
           :rounded="false"
-          :im-export="{ uploadUrl: '/share-table/api/v1/excel/upload' }"
+          :size="shareTable.selected.size"
+          :im-export="{
+            uploadUrl: '/share-table/api/v1/file/upload',
+            expName: shareTable.selected.name
+          }"
           :edit-mode="shareTable.selected.edtMod"
           :emitter="emitter"
           :api="api.shareTable.data(shareTable.selected.key)"
@@ -545,7 +560,12 @@ function onShareTableClick() {
         @submit="onEdtColSubmit"
       >
         <template #keySFX="{ formState }: any">
-          <a-button @click="() => (formState.key = formState.label)">同列名</a-button>
+          <a-button
+            v-if="!(formState.key in shareTable.selected.form)"
+            @click="() => (formState.key = formState.label)"
+          >
+            同列名
+          </a-button>
         </template>
         <template #rules[0].requiredSFX="{ formState }: any">
           <a-form-item-rest>
