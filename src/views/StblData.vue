@@ -10,11 +10,12 @@ import Mapper, { newObjByMapper } from '@lib/types/mapper'
 import { LogoutOutlined, UserOutlined, DatabaseOutlined } from '@ant-design/icons-vue'
 import STable from '@/types/sTable'
 import StUser from '@/types/stUser'
-import { pickOrIgnore, setProp } from '@lib/utils'
+import { getProp, pickOrIgnore, setProp } from '@lib/utils'
 import FormGroup from '@lib/components/FormGroup.vue'
 import { useLoginStore } from '@/stores/login'
 import { storeToRefs } from 'pinia'
 import type StRcd from '@/types/stRecord'
+import type { AuCond } from '@/types/stAuth'
 
 const route = useRoute()
 const router = useRouter()
@@ -117,7 +118,24 @@ function filterDataByAuth(record: any) {
   if (!lgnUsr.value?.auth.queriable) {
     return false
   }
-  return lgnUsr.value?.auth.qryOnlyOwn ? record.fkUser === store.user?.key : true
+  if (lgnUsr.value?.auth.qryOnlyOwn) {
+    return record.fkUser === store.user?.key
+  } else {
+    let ret = true
+    const cmpDict = {
+      '==': (cond: AuCond) => getProp(record, cond.prop) === cond.value,
+      '!=': (cond: AuCond) => getProp(record, cond.prop) !== cond.value
+    }
+    const relDict = {
+      '&&': (cond: AuCond) => ret && cmpDict[cond.compare](cond),
+      '||': (cond: AuCond) => ret || cmpDict[cond.compare](cond),
+      '!': (cond: AuCond) => ret && !cmpDict[cond.compare](cond)
+    }
+    for (const cond of lgnUsr.value?.auth.canQryRows) {
+      ret = relDict[cond.relate](cond)
+    }
+    return ret
+  }
 }
 </script>
 

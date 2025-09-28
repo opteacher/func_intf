@@ -395,7 +395,7 @@ function onUsrExtCancel(visible: boolean) {
           </a-form-item>
           <a-form-item v-else-if="column.dataIndex === 'update'" label="可修改的行/单元格">
             <NumPairLst
-              v-model:num-pair-list="userTable.formState.auth.canUpdRowCells"
+              v-model:num-pair-list="userTable.formState.auth.canUpdRows"
               :disabled="!userTable.formState.auth.updatable || userTable.formState.auth.updOnlyOwn"
               :placeholder="['行号', '列号']"
               split-letter="/"
@@ -403,7 +403,7 @@ function onUsrExtCancel(visible: boolean) {
           </a-form-item>
           <a-form-item v-else-if="column.dataIndex === 'query'" label="可修改的行/单元格">
             <NumPairLst
-              v-model:num-pair-list="userTable.formState.auth.canQryRowCells"
+              v-model:num-pair-list="userTable.formState.auth.canQryRows"
               :disabled="!userTable.formState.auth.queriable || userTable.formState.auth.qryOnlyOwn"
               :placeholder="['行号', '列号']"
               split-letter="/"

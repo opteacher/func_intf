@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import FlexDivider from '@lib/components/FlexDivider.vue'
 import { TinyEmitter } from 'tiny-emitter'
-import { computed, createVNode, nextTick, onMounted, reactive, ref } from 'vue'
+import { computed, createVNode, nextTick, onMounted, reactive, ref, watch } from 'vue'
 import EditableTable from '@lib/components/EditableTable.vue'
 import api from '@/api'
 import STable, { avaCmpTypes, extraDict } from '@/types/sTable'
@@ -27,7 +27,7 @@ import { Modal } from 'ant-design-vue'
 import MemMgrList from '@/components/MemMgrLst.vue'
 import TblDirTree from '@/components/TblDirTree.vue'
 import type StUser from '@/types/stUser'
-import Auth from '@/types/stAuth'
+import Auth, { AuCond } from '@/types/stAuth'
 import router from '@/router'
 import { operDict } from '@/types/stOpLog'
 
@@ -102,16 +102,33 @@ const shareTable = reactive({
       delable: true,
       delKeys: [] as string[],
       filter: (record: any) => {
-        {
-          if (!shareTable.selected.usrAuth) {
-            return true
+        if (
+          !shareTable.preview.visible ||
+          !shareTable.selected.usrAuth ||
+          shareTable.preview.selUser === 'admin'
+        ) {
+          return true
+        }
+        if (!shareTable.preview.auth.queriable) {
+          return false
+        }
+        if (shareTable.preview.auth.qryOnlyOwn) {
+          return record.fkUser === shareTable.preview.selUser
+        } else {
+          let ret = true
+          const cmpDict = {
+            '==': (cond: AuCond) => getProp(record, cond.prop) === cond.value,
+            '!=': (cond: AuCond) => getProp(record, cond.prop) !== cond.value
           }
-          if (!shareTable.preview.auth.queriable) {
-            return false
+          const relDict = {
+            '&&': (cond: AuCond) => ret && cmpDict[cond.compare](cond),
+            '||': (cond: AuCond) => ret || cmpDict[cond.compare](cond),
+            '!': (cond: AuCond) => ret && !cmpDict[cond.compare](cond)
           }
-          return shareTable.preview.auth.qryOnlyOwn
-            ? record.fkUser === shareTable.preview.selUser
-            : true
+          for (const cond of shareTable.preview.auth.canQryRows) {
+            ret = relDict[cond.relate](cond)
+          }
+          return ret
         }
       }
     }
@@ -220,6 +237,10 @@ const userOpns = computed<{ label: string; value: string }[]>(() =>
 )
 
 onMounted(refresh)
+watch(
+  () => shareTable.preview.visible,
+  () => emitter.emit('refresh')
+)
 
 async function refresh(key?: string) {
   shareTable.selected.reset()
@@ -373,6 +394,7 @@ async function onPrevUsrSelect(key: string) {
     shareTable.preview.visible && shareTable.preview.auth.delOnlyOwn
       ? shareTable.preview.rcdKeys
       : ['*']
+  emitter.emit('refresh')
 }
 function onShareTableClick() {
   const url = router.resolve({
@@ -489,26 +511,36 @@ function onShareTableClick() {
           </template>
           <template #former="{ record }: any">
             <template v-if="!record.former">无</template>
-            <pre v-else class="whitespace-pre-wrap break-words">{{ JSON.stringify(record.former) }}</pre>
+            <pre v-else class="whitespace-pre-wrap break-words">{{
+              JSON.stringify(record.former)
+            }}</pre>
           </template>
           <template #latter="{ record }: any">
             <template v-if="!record.latter">无</template>
-            <pre v-else class="whitespace-pre-wrap break-words">{{ JSON.stringify(record.latter) }}</pre>
+            <pre v-else class="whitespace-pre-wrap break-words">{{
+              JSON.stringify(record.latter)
+            }}</pre>
           </template>
         </EditableTable>
         <EditableTable
           v-else
           thd-class="px-0 py-2"
           ref="stableRef"
+          :title="shareTable.preview.visible ? shareTable.selected.name : undefined"
           :rounded="false"
           :size="shareTable.selected.size"
-          :im-export="{
-            uploadUrl: '/share-table/api/v1/file/upload',
-            expName: shareTable.selected.name
-          }"
+          :im-export="
+            shareTable.preview.visible
+              ? false
+              : {
+                  uploadUrl: '/share-table/api/v1/file/upload',
+                  expName: shareTable.selected.name
+                }
+          "
           :edit-mode="shareTable.selected.edtMod"
           :emitter="emitter"
           :api="api.shareTable.data(shareTable.selected.key)"
+          :filter="shareTable.preview.tblProps.filter"
           :mapper="mapper"
           :columns="columns"
           :addable="shareTable.preview.tblProps.addable"
@@ -518,7 +550,7 @@ function onShareTableClick() {
           :delable-keys="shareTable.preview.tblProps.delKeys"
           :new-fun="() => newObjByMapper(mapper)"
         >
-          <template #title>
+          <template v-if="!shareTable.preview.visible" #title>
             <a-radio-group v-model:value="shareTable.type" @change="() => emitter.emit('refresh')">
               <a-radio-button value="data">数据表</a-radio-button>
               <a-radio-button value="opLog">操作日志</a-radio-button>
@@ -630,7 +662,10 @@ function onShareTableClick() {
         @hbtn-click="() => swchBoolProp(layout, 'rightVsb')"
       />
       <a-layout-sider v-show="layout.rightVsb" theme="light" class="pl-3" :width="layout.rightWid">
-        <MemMgrList :stable="shareTable.selected" @refresh="() => refresh(shareTable.selected.key)" />
+        <MemMgrList
+          :stable="shareTable.selected"
+          @refresh="() => refresh(shareTable.selected.key)"
+        />
       </a-layout-sider>
     </template>
   </a-layout>

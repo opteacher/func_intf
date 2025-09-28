@@ -3,9 +3,9 @@ import { gnlCpy } from '@lib/utils'
 export type NumOrAll = number | '*'
 
 export class AuCond {
-  relate: '&&' | '||' | '!'
+  relate: keyof typeof relDict
   prop: string
-  compare: '==' | '!='
+  compare: keyof typeof cmpDict
   value: any
 
   constructor() {
@@ -27,6 +27,17 @@ export class AuCond {
   }
 }
 
+export const cmpDict = {
+  '==': '等于',
+  '!=': '不等于'
+}
+
+export const relDict = {
+  '&&': '与',
+  '||': '或',
+  '!': '非'
+}
+
 export interface AuthInterface {
   addable: boolean
   deletable: boolean
@@ -37,8 +48,8 @@ export interface AuthInterface {
   qryOnlyOwn: boolean
   canAddNum: NumOrAll
   canDelRows: AuCond[]
-  canUpdRowCells: AuCond[]
-  canQryRowCells: AuCond[]
+  canUpdRows: AuCond[]
+  canQryRows: AuCond[]
   reset(): void
 }
 
@@ -52,8 +63,8 @@ export default class Auth implements AuthInterface {
   qryOnlyOwn: boolean
   canAddNum: NumOrAll
   canDelRows: AuCond[]
-  canUpdRowCells: AuCond[]
-  canQryRowCells: AuCond[]
+  canUpdRows: AuCond[]
+  canQryRows: AuCond[]
 
   constructor() {
     this.addable = true
@@ -65,8 +76,8 @@ export default class Auth implements AuthInterface {
     this.qryOnlyOwn = false
     this.canAddNum = 1
     this.canDelRows = [new AuCond()]
-    this.canUpdRowCells = [new AuCond()]
-    this.canQryRowCells = [new AuCond()]
+    this.canUpdRows = [new AuCond()]
+    this.canQryRows = [new AuCond()]
   }
 
   reset() {
@@ -79,8 +90,8 @@ export default class Auth implements AuthInterface {
     this.qryOnlyOwn = false
     this.canAddNum = 1
     this.canDelRows = [new AuCond()]
-    this.canUpdRowCells = [new AuCond()]
-    this.canQryRowCells = [new AuCond()]
+    this.canUpdRows = [new AuCond()]
+    this.canQryRows = [new AuCond()]
   }
 
   static copy(src: any, tgt?: Auth, force = false): Auth {
@@ -88,8 +99,8 @@ export default class Auth implements AuthInterface {
       force,
       cpyMapper: {
         canDelRows: AuCond.copy,
-        canUpdRowCells: AuCond.copy,
-        canQryRowCells: AuCond.copy
+        canUpdRows: AuCond.copy,
+        canQryRows: AuCond.copy
       }
     })
   }

@@ -17,7 +17,7 @@ import StUser from '@/types/stUser'
 import { cloneDeep, difference } from 'lodash'
 import { computed, createVNode, onMounted, reactive, ref, watch } from 'vue'
 import { TinyEmitter } from 'tiny-emitter'
-import Mapper, { BaseMapper, EdtLstMapper, mapTypeTemps } from '@lib/types/mapper'
+import Mapper, { BaseMapper, mapTypeTemps } from '@lib/types/mapper'
 import { compoOpns } from '@lib/types'
 import STable, { avaCmpTypes, extraDict } from '@/types/sTable'
 import { pickOrIgnore, setProp, newOne, getProp } from '@lib/utils'
@@ -30,9 +30,7 @@ import BatImpBox from '@lib/components/BatImpBox.vue'
 import Column from '@lib/types/column'
 import type BatImp from '@lib/types/batImp'
 import { utils, type WorkSheet } from 'xlsx'
-import FormItem from '@lib/components/FormItem.vue'
-import type StRcd from '@/types/stRecord'
-import { uniq } from 'lodash'
+import OpSubFmItm from './OpSubFmItm.vue'
 
 const props = defineProps({
   stable: { type: STable, required: true }
@@ -107,63 +105,14 @@ const authTable = reactive({
       align: 'center'
     }
   ],
-  opers: [{ desc: '可否操作' }, { desc: '操作对象' }],
-  subMapper: {
-    type: 'EditList',
-    lblProp: 'prop',
-    lblDict: Object.fromEntries(
-      Object.entries(props.stable.form).map(([value, { label }]) => [value, label])
-    ),
-    subProp: 'value',
-    mapper: new Mapper({
-      relate: {
-        label: '关联符',
-        type: 'Radio',
-        style: 'button',
-        options: [
-          { label: '与', value: '&&' },
-          { label: '或', value: '||' },
-          { label: '非', value: '!' }
-        ]
-      },
-      prop: {
-        label: '数据列',
-        type: 'Select',
-        options: Object.entries(props.stable.form).map(([value, { label }]) => ({ value, label })),
-        onChange: (_record: any, to: any) => {
-          authTable.subMapper.mapper['value'].options = uniq(
-            (props.stable.fkRecords as StRcd[]).map(record => getProp(record.raw, to))
-          ).map(item => ({
-            label: item,
-            value: item
-          }))
-        }
-      },
-      compera: {
-        label: '对应符',
-        type: 'Radio',
-        style: 'button',
-        options: [
-          { label: '等于', value: '==' },
-          { label: '不等于', value: '!=' }
-        ]
-      },
-      value: {
-        label: '对应值',
-        type: 'SelOrIpt',
-        mode: 'select'
-      }
-    }),
-    newFun: () => ({ relate: '&&', prop: undefined, compera: '==', value: '' }),
-    inline: false
-  } as EdtLstMapper
+  opers: [{ desc: '可否操作' }, { desc: '操作对象' }]
 })
 type OperType = keyof AuthInterface
 const operDict = {
   add: ['addable'],
-  delete: ['deletable', 'delOnlyOwn', '删除'],
-  update: ['updatable', 'updOnlyOwn', '编辑'],
-  query: ['queriable', 'qryOnlyOwn', '查询']
+  delete: ['deletable', 'delOnlyOwn', 'canDelRows', '删除'],
+  update: ['updatable', 'updOnlyOwn', 'canUpdRows', '编辑'],
+  query: ['queriable', 'qryOnlyOwn', 'canQryRows', '查询']
 }
 const userExtra = reactive({
   emitter: new TinyEmitter(),
@@ -558,17 +507,17 @@ async function onBatImpUsrSubmit(info: BatImp) {
             v-model:checked="userList.formState.auth[getProp(operDict, column.dataIndex + '[1]') as OperType]"
             :disabled="!userList.formState.auth[getProp(operDict, column.dataIndex + '[0]') as OperType]"
           >
-            只可{{ getProp(operDict, column.dataIndex + '[2]') }}自己创建的记录
+            只可{{ getProp(operDict, column.dataIndex + '[3]') }}自己创建的记录
           </a-checkbox>
         </a-space>
-        <a-form v-else-if="record.desc === '操作对象'">
+        <a-form v-else-if="record.desc === '操作对象'" :model="userList.formState.auth">
           <a-form-item v-if="column.dataIndex === 'desc'" label="操作对象">
             <a-tooltip placement="topLeft">
               <template #title>如需操作所有行/单元格，直接使用【*】符号</template>
               <InfoCircleOutlined />
             </a-tooltip>
           </a-form-item>
-          <a-form-item v-if="column.dataIndex === 'add'" label="可新增的记录数">
+          <a-form-item v-if="column.dataIndex === 'add'" label="可新增的记录数" name="canAddNum">
             <a-input
               :disabled="!userList.formState.auth.addable"
               type="number"
@@ -576,45 +525,11 @@ async function onBatImpUsrSubmit(info: BatImp) {
               v-model:value="userList.formState.auth.canAddNum"
             />
           </a-form-item>
-          <FormItem
-            v-else-if="column.dataIndex === 'delete'"
-            :form="userList.formState.auth"
-            skey="canDelRows"
-            :mapper="
-              Object.assign(
-                { disabled: () => userList.formState.auth.delOnlyOwn },
-                authTable.subMapper
-              )
-            "
-            :fldWid="24"
-          >
-            <template #labelItem="{ item }: any">
-              {{ item }}
-            </template>
-          </FormItem>
-          <FormItem
-            v-else-if="column.dataIndex === 'update'"
-            :form="userList.formState.auth"
-            skey="canDelRows"
-            :mapper="
-              Object.assign(
-                { disabled: () => userList.formState.auth.updOnlyOwn },
-                authTable.subMapper
-              )
-            "
-            :fldWid="24"
-          />
-          <FormItem
-            v-else-if="column.dataIndex === 'query'"
-            :form="userList.formState.auth"
-            skey="canDelRows"
-            :mapper="
-              Object.assign(
-                { disabled: () => userList.formState.auth.qryOnlyOwn },
-                authTable.subMapper
-              )
-            "
-            :fldWid="24"
+          <OpSubFmItm
+            v-else-if="['delete', 'update', 'query'].includes(column.dataIndex)"
+            v-model:auth="userList.formState.auth"
+            :stable="stable"
+            :op-ary="operDict[column.dataIndex as 'delete' | 'update' | 'query']"
           />
         </a-form>
       </template>
