@@ -320,34 +320,16 @@ const expIns = {
         }).then(stbl =>
           (stbl.fkRecords as StRcd[]).map(rcd => ({ key: rcd.key, fkUser: rcd.fkUser, ...rcd.raw }))
         ),
-      add: async (raw: any) => {
-        const newRcd = await reqPost<StRcd>('record', { raw }, { ...stblOpns, copy: StRcd.copy })
-        await reqLink(
-          {
-            parent: ['stable', tid],
-            child: ['fkRecords', newRcd.key]
+      add: (raw: any) =>
+        reqPost<StRcd>(`stable/${tid}/record`, raw, {
+          project: stblOpns.project,
+          axiosConfig: {
+            baseURL: stblOpns.axiosConfig.baseURL,
+            params: { uid: useLoginStore().user?.key }
           },
-          true,
-          stblOpns
-        )
-        await expIns.shareTable.opLog(tid).add({
-          otype: 'add',
-          okey: newRcd.key,
-          latter: raw
-        })
-        const store = useLoginStore()
-        if (store.user?.key) {
-          await reqLink(
-            {
-              parent: ['record', newRcd.key],
-              child: ['fkUser', store.user?.key]
-            },
-            true,
-            stblOpns
-          )
-        }
-        return newRcd
-      },
+          type: 'api',
+          copy: StRcd.copy
+        }),
       update: async (record: any) => {
         const fmrRcd = await reqGet<StRcd>('record', record.key, {
           ...stblOpns,

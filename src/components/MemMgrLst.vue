@@ -10,13 +10,14 @@ import {
   TeamOutlined,
   DeleteOutlined,
   ExclamationCircleOutlined,
-  UsergroupAddOutlined
+  UsergroupAddOutlined,
+  InfoCircleOutlined
 } from '@ant-design/icons-vue'
 import StUser from '@/types/stUser'
 import { cloneDeep, difference } from 'lodash'
 import { computed, createVNode, onMounted, reactive, ref, watch } from 'vue'
 import { TinyEmitter } from 'tiny-emitter'
-import Mapper, { BaseMapper, mapTypeTemps } from '@lib/types/mapper'
+import Mapper, { BaseMapper, EdtLstMapper, mapTypeTemps } from '@lib/types/mapper'
 import { compoOpns } from '@lib/types'
 import STable, { avaCmpTypes, extraDict } from '@/types/sTable'
 import { pickOrIgnore, setProp, newOne, getProp } from '@lib/utils'
@@ -24,12 +25,14 @@ import type { AuthInterface } from '@/types/stAuth'
 import Auth from '@/types/stAuth'
 import FormDialog from '@lib/components/FormDialog.vue'
 import api from '@/api'
-import NumPairLst from '@/components/NumPairLst.vue'
 import { Modal } from 'ant-design-vue'
 import BatImpBox from '@lib/components/BatImpBox.vue'
 import Column from '@lib/types/column'
 import type BatImp from '@lib/types/batImp'
 import { utils, type WorkSheet } from 'xlsx'
+import FormItem from '@lib/components/FormItem.vue'
+import type StRcd from '@/types/stRecord'
+import { uniq } from 'lodash'
 
 const props = defineProps({
   stable: { type: STable, required: true }
@@ -104,7 +107,56 @@ const authTable = reactive({
       align: 'center'
     }
   ],
-  opers: [{ desc: '可否操作' }, { desc: '操作对象' }]
+  opers: [{ desc: '可否操作' }, { desc: '操作对象' }],
+  subMapper: {
+    type: 'EditList',
+    lblProp: 'prop',
+    lblDict: Object.fromEntries(
+      Object.entries(props.stable.form).map(([value, { label }]) => [value, label])
+    ),
+    subProp: 'value',
+    mapper: new Mapper({
+      relate: {
+        label: '关联符',
+        type: 'Radio',
+        style: 'button',
+        options: [
+          { label: '与', value: '&&' },
+          { label: '或', value: '||' },
+          { label: '非', value: '!' }
+        ]
+      },
+      prop: {
+        label: '数据列',
+        type: 'Select',
+        options: Object.entries(props.stable.form).map(([value, { label }]) => ({ value, label })),
+        onChange: (_record: any, to: any) => {
+          authTable.subMapper.mapper['value'].options = uniq(
+            (props.stable.fkRecords as StRcd[]).map(record => getProp(record.raw, to))
+          ).map(item => ({
+            label: item,
+            value: item
+          }))
+        }
+      },
+      compera: {
+        label: '对应符',
+        type: 'Radio',
+        style: 'button',
+        options: [
+          { label: '等于', value: '==' },
+          { label: '不等于', value: '!=' }
+        ]
+      },
+      value: {
+        label: '对应值',
+        type: 'SelOrIpt',
+        mode: 'select'
+      }
+    }),
+    newFun: () => ({ relate: '&&', prop: undefined, compera: '==', value: '' }),
+    inline: false
+  } as EdtLstMapper
 })
 type OperType = keyof AuthInterface
 const operDict = {
@@ -509,13 +561,14 @@ async function onBatImpUsrSubmit(info: BatImp) {
             只可{{ getProp(operDict, column.dataIndex + '[2]') }}自己创建的记录
           </a-checkbox>
         </a-space>
-        <a-form v-else-if="record.desc === '操作对象'" layout="vertical">
+        <a-form v-else-if="record.desc === '操作对象'">
           <a-form-item v-if="column.dataIndex === 'desc'" label="操作对象">
-            <a-typography-text type="secondary">
-              如需操作所有行/单元格，直接使用【*】符号
-            </a-typography-text>
+            <a-tooltip placement="topLeft">
+              <template #title>如需操作所有行/单元格，直接使用【*】符号</template>
+              <InfoCircleOutlined />
+            </a-tooltip>
           </a-form-item>
-          <a-form-item v-if="column.dataIndex === 'add'" label="可添加的记录数">
+          <a-form-item v-if="column.dataIndex === 'add'" label="可新增的记录数">
             <a-input
               :disabled="!userList.formState.auth.addable"
               type="number"
@@ -523,32 +576,46 @@ async function onBatImpUsrSubmit(info: BatImp) {
               v-model:value="userList.formState.auth.canAddNum"
             />
           </a-form-item>
-          <a-form-item v-else-if="column.dataIndex === 'delete'">
-            <template #label>
-              可删除的行数&nbsp;
-              <a-typography-text type="secondary">结束行不填代表指定行</a-typography-text>
+          <FormItem
+            v-else-if="column.dataIndex === 'delete'"
+            :form="userList.formState.auth"
+            skey="canDelRows"
+            :mapper="
+              Object.assign(
+                { disabled: () => userList.formState.auth.delOnlyOwn },
+                authTable.subMapper
+              )
+            "
+            :fldWid="24"
+          >
+            <template #labelItem="{ item }: any">
+              {{ item }}
             </template>
-            <NumPairLst
-              v-model:num-pair-list="userList.formState.auth.canDelRows"
-              :disabled="!userList.formState.auth.deletable || userList.formState.auth.delOnlyOwn"
-            />
-          </a-form-item>
-          <a-form-item v-else-if="column.dataIndex === 'update'" label="可修改的行/单元格">
-            <NumPairLst
-              v-model:num-pair-list="userList.formState.auth.canUpdRowCells"
-              :disabled="!userList.formState.auth.updatable || userList.formState.auth.updOnlyOwn"
-              :placeholder="['行号', '列号']"
-              split-letter="/"
-            />
-          </a-form-item>
-          <a-form-item v-else-if="column.dataIndex === 'query'" label="可修改的行/单元格">
-            <NumPairLst
-              v-model:num-pair-list="userList.formState.auth.canQryRowCells"
-              :disabled="!userList.formState.auth.queriable || userList.formState.auth.qryOnlyOwn"
-              :placeholder="['行号', '列号']"
-              split-letter="/"
-            />
-          </a-form-item>
+          </FormItem>
+          <FormItem
+            v-else-if="column.dataIndex === 'update'"
+            :form="userList.formState.auth"
+            skey="canDelRows"
+            :mapper="
+              Object.assign(
+                { disabled: () => userList.formState.auth.updOnlyOwn },
+                authTable.subMapper
+              )
+            "
+            :fldWid="24"
+          />
+          <FormItem
+            v-else-if="column.dataIndex === 'query'"
+            :form="userList.formState.auth"
+            skey="canDelRows"
+            :mapper="
+              Object.assign(
+                { disabled: () => userList.formState.auth.qryOnlyOwn },
+                authTable.subMapper
+              )
+            "
+            :fldWid="24"
+          />
         </a-form>
       </template>
     </a-table>
