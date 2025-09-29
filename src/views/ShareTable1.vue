@@ -27,7 +27,7 @@ import { Modal } from 'ant-design-vue'
 import MemMgrList from '@/components/MemMgrLst.vue'
 import TblDirTree from '@/components/TblDirTree.vue'
 import type StUser from '@/types/stUser'
-import Auth, { AuCond } from '@/types/stAuth'
+import Auth from '@/types/stAuth'
 import router from '@/router'
 import { operDict } from '@/types/stOpLog'
 
@@ -93,7 +93,6 @@ const shareTable = reactive({
     visible: false,
     selUser: 'admin',
     auth: new Auth(),
-    rcdKeys: [] as string[],
     tblProps: {
       count: 0,
       addable: true,
@@ -109,26 +108,17 @@ const shareTable = reactive({
         ) {
           return true
         }
-        if (!shareTable.preview.auth.queriable) {
+        const auth = shareTable.preview.auth
+        if (!auth.queriable) {
           return false
         }
-        if (shareTable.preview.auth.qryOnlyOwn) {
+        if (auth.canQryRows.length && !auth.canQryRows[0].prop && !auth.canQryRows[0].value) {
+          // 具有全查询权限
+          return true
+        } else if (auth.qryOnlyOwn) {
           return record.fkUser === shareTable.preview.selUser
         } else {
-          let ret = true
-          const cmpDict = {
-            '==': (cond: AuCond) => getProp(record, cond.prop) === cond.value,
-            '!=': (cond: AuCond) => getProp(record, cond.prop) !== cond.value
-          }
-          const relDict = {
-            '&&': (cond: AuCond) => ret && cmpDict[cond.compare](cond),
-            '||': (cond: AuCond) => ret || cmpDict[cond.compare](cond),
-            '!': (cond: AuCond) => ret && !cmpDict[cond.compare](cond)
-          }
-          for (const cond of shareTable.preview.auth.canQryRows) {
-            ret = relDict[cond.relate](cond)
-          }
-          return ret
+          return auth.canOperRow('canQryRows', record)
         }
       }
     }
@@ -362,38 +352,52 @@ function onEdtStblClick(stbl: any = shareTable.selected) {
   })
 }
 async function onPrevUsrSelect(key: string) {
+  const prev = shareTable.preview
   if (key === 'admin') {
-    shareTable.preview.auth.reset()
-    shareTable.preview.auth.canAddNum = '*'
-    shareTable.preview.tblProps.count = 0
-    shareTable.preview.rcdKeys = ['*']
-  } else {
-    const user = (shareTable.selected.fkUsers as StUser[]).find(usr => usr.key === key) as StUser
-    Auth.copy(user.auth, shareTable.preview.auth, true)
-    shareTable.preview.tblProps.count = await api.shareTable
-      .data(shareTable.selected.key)
-      .count(key)
-    shareTable.preview.rcdKeys = (
-      await api.shareTable.data(shareTable.selected.key).ownByWho(user.key)
-    ).map(rcd => rcd.key)
+    prev.auth.reset()
+    prev.auth.canAddNum = '*'
+    prev.tblProps.addable = true
+    prev.tblProps.edtable = true
+    prev.tblProps.edtKeys = ['*']
+    prev.tblProps.delable = true
+    prev.tblProps.delKeys = ['*']
+    prev.tblProps.count = 0
+    emitter.emit('refresh')
+    return
   }
-  shareTable.preview.tblProps.addable =
-    !shareTable.preview.visible ||
-    (shareTable.preview.auth.addable &&
-      (shareTable.preview.auth.canAddNum === '*' ||
-        shareTable.preview.tblProps.count < shareTable.preview.auth.canAddNum))
-  shareTable.preview.tblProps.edtable =
-    !shareTable.preview.visible || shareTable.preview.auth.updatable
-  shareTable.preview.tblProps.edtKeys =
-    shareTable.preview.visible && shareTable.preview.auth.updOnlyOwn
-      ? shareTable.preview.rcdKeys
-      : ['*']
-  shareTable.preview.tblProps.delable =
-    !shareTable.preview.visible || shareTable.preview.auth.deletable
-  shareTable.preview.tblProps.delKeys =
-    shareTable.preview.visible && shareTable.preview.auth.delOnlyOwn
-      ? shareTable.preview.rcdKeys
-      : ['*']
+  const user = (shareTable.selected.fkUsers as StUser[]).find(usr => usr.key === key) as StUser
+  Auth.copy(user.auth, prev.auth, true)
+  prev.tblProps.count = await api.shareTable.data(shareTable.selected.key).count(key)
+  const myRcds = await api.shareTable
+    .data(shareTable.selected.key)
+    .ownByWho(user.key)
+    .then(records => records.map(record => record.key))
+  prev.tblProps.addable =
+    !prev.visible ||
+    (prev.auth.addable &&
+      (prev.auth.canAddNum === '*' || prev.tblProps.count < prev.auth.canAddNum))
+  prev.tblProps.edtable = !prev.visible || prev.auth.updatable
+  prev.tblProps.delable = !prev.visible || prev.auth.deletable
+  const allRcds = await api.shareTable.data(shareTable.selected.key).all()
+  if (prev.visible) {
+    if (prev.auth.updOnlyOwn) {
+      prev.tblProps.edtKeys = myRcds
+    } else {
+      prev.tblProps.edtKeys = prev.auth
+        .canOperRows('canUpdRows', allRcds)
+        .map(rcd => rcd.key || rcd)
+    }
+    if (prev.auth.delOnlyOwn) {
+      prev.tblProps.delKeys = myRcds
+    } else {
+      prev.tblProps.delKeys = prev.auth
+        .canOperRows('canDelRows', allRcds)
+        .map(rcd => rcd.key || rcd)
+    }
+  } else {
+    prev.tblProps.edtKeys = ['*']
+    prev.tblProps.delKeys = ['*']
+  }
   emitter.emit('refresh')
 }
 function onShareTableClick() {
@@ -533,6 +537,8 @@ function onShareTableClick() {
             shareTable.preview.visible
               ? false
               : {
+                  expable: true,
+                  impable: true,
                   uploadUrl: '/share-table/api/v1/file/upload',
                   expName: shareTable.selected.name
                 }
@@ -568,7 +574,7 @@ function onShareTableClick() {
             </a-button>
             <template v-else>{{ column.title }}</template>
           </template>
-          <template #right="{ height }: any">
+          <template #right="{ height }: { height: number }">
             <a-tooltip>
               <template #title>添加列</template>
               <a-button

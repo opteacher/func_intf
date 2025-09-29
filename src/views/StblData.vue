@@ -118,23 +118,17 @@ function filterDataByAuth(record: any) {
   if (!lgnUsr.value?.auth.queriable) {
     return false
   }
-  if (lgnUsr.value?.auth.qryOnlyOwn) {
+  if (
+    lgnUsr.value?.auth.canQryRows.length &&
+    !lgnUsr.value?.auth.canQryRows[0].prop &&
+    !lgnUsr.value?.auth.canQryRows[0].value
+  ) {
+    // 具有全查询权限
+    return true
+  } else if (lgnUsr.value?.auth.qryOnlyOwn) {
     return record.fkUser === store.user?.key
   } else {
-    let ret = true
-    const cmpDict = {
-      '==': (cond: AuCond) => getProp(record, cond.prop) === cond.value,
-      '!=': (cond: AuCond) => getProp(record, cond.prop) !== cond.value
-    }
-    const relDict = {
-      '&&': (cond: AuCond) => ret && cmpDict[cond.compare](cond),
-      '||': (cond: AuCond) => ret || cmpDict[cond.compare](cond),
-      '!': (cond: AuCond) => ret && !cmpDict[cond.compare](cond)
-    }
-    for (const cond of lgnUsr.value?.auth.canQryRows) {
-      ret = relDict[cond.relate](cond)
-    }
-    return ret
+    return lgnUsr.value?.auth.canOperRow('canQryRows', record)
   }
 }
 </script>

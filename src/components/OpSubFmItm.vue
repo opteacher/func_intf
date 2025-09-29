@@ -75,7 +75,15 @@ const bsOpMapper = reactive<EdtLstMapper>({
       label: '对应值',
       type: 'SelOrIpt',
       mode: 'select'
-    }
+    },
+    // opAll: {
+    //   type: 'Button',
+    //   offset: 4,
+    //   inner: `可${props.opAry[3]}所有记录`,
+    //   onClick: () => {
+    //     setProp(props.auth, props.opAry[2], [new AuCond()])
+    //   }
+    // }
   }),
   newFun: () => ({ relate: '&&', prop: undefined, compare: '==', value: '' }),
   inline: false
@@ -103,6 +111,6 @@ function onFpropUpdate(auth: AuthInterface) {
     // 当只有一条条件的时候，关系符号设为或
     setProp(auth, props.opAry[2] + '.relate', '||')
   }
-  emit('update:auth', Auth.copy(auth, props.auth))
+  emit('update:auth', setProp(props.auth, props.opAry[2], getProp(auth, props.opAry[2])))
 }
 </script>

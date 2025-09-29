@@ -1,4 +1,4 @@
-import { gnlCpy } from '@lib/utils'
+import { getProp, gnlCpy } from '@lib/utils'
 
 export type NumOrAll = number | '*'
 
@@ -65,6 +65,18 @@ export default class Auth implements AuthInterface {
   canDelRows: AuCond[]
   canUpdRows: AuCond[]
   canQryRows: AuCond[]
+  static _cmpDict = {
+    '==': (record: any, cond: AuCond) => getProp(record, cond.prop) === cond.value,
+    '!=': (record: any, cond: AuCond) => getProp(record, cond.prop) !== cond.value
+  }
+  static _relDict = {
+    '&&': (record: any, former: boolean, cond: AuCond) =>
+      former && Auth._cmpDict[cond.compare](record, cond),
+    '||': (record: any, former: boolean, cond: AuCond) =>
+      former || Auth._cmpDict[cond.compare](record, cond),
+    '!': (record: any, former: boolean, cond: AuCond) =>
+      former && !Auth._cmpDict[cond.compare](record, cond)
+  }
 
   constructor() {
     this.addable = true
@@ -75,8 +87,8 @@ export default class Auth implements AuthInterface {
     this.queriable = true
     this.qryOnlyOwn = false
     this.canAddNum = 1
-    this.canDelRows = [new AuCond()]
-    this.canUpdRows = [new AuCond()]
+    this.canDelRows = []
+    this.canUpdRows = []
     this.canQryRows = [new AuCond()]
   }
 
@@ -89,9 +101,25 @@ export default class Auth implements AuthInterface {
     this.queriable = true
     this.qryOnlyOwn = false
     this.canAddNum = 1
-    this.canDelRows = [new AuCond()]
-    this.canUpdRows = [new AuCond()]
+    this.canDelRows = []
+    this.canUpdRows = []
     this.canQryRows = [new AuCond()]
+  }
+
+  canOperRow(oper: 'canDelRows' | 'canUpdRows' | 'canQryRows', record: any): boolean {
+    return this[oper].reduce(
+      (ret: boolean, cond: AuCond) => Auth._relDict[cond.relate](record, ret, cond),
+      true
+    )
+  }
+
+  canOperRows(oper: 'canDelRows' | 'canUpdRows' | 'canQryRows', records: any[]) {
+    if (!this[oper].length) {
+      return []
+    } else if (!this[oper][0].prop && !this[oper][0].value) {
+      return ['*']
+    }
+    return records.filter(record => this.canOperRow(oper, record))
   }
 
   static copy(src: any, tgt?: Auth, force = false): Auth {

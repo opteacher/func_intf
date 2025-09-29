@@ -31,6 +31,7 @@ import Column from '@lib/types/column'
 import type BatImp from '@lib/types/batImp'
 import { utils, type WorkSheet } from 'xlsx'
 import OpSubFmItm from './OpSubFmItm.vue'
+import _ from 'lodash'
 
 const props = defineProps({
   stable: { type: STable, required: true }
@@ -296,12 +297,7 @@ async function onAuthSubmit() {
       .user(props.stable.key)
       .update(pickOrIgnore(userList.formState, ['key', 'auth'], false))
   }
-  resetUserAuth()
   emit('refresh')
-}
-function resetUserAuth() {
-  authTable.visible = false
-  userList.formState.reset()
 }
 function onAuthConf(user: StUser) {
   StUser.copy(user, userList.formState, true)
