@@ -96,10 +96,8 @@ const shareTable = reactive({
     tblProps: {
       count: 0,
       addable: true,
-      edtable: true,
-      edtKeys: [] as string[],
-      delable: true,
-      delKeys: [] as string[],
+      editable: true as boolean | Function,
+      delable: true as boolean | Function,
       filter: (record: any) => {
         if (
           !shareTable.preview.visible ||
@@ -229,7 +227,14 @@ const userOpns = computed<{ label: string; value: string }[]>(() =>
 onMounted(refresh)
 watch(
   () => shareTable.preview.visible,
-  () => emitter.emit('refresh')
+  () => {
+    emitter.emit('refresh')
+    if (!shareTable.preview.visible) {
+      onPrevUsrSelect('admin')
+    } else {
+      shareTable.preview.selUser = 'admin'
+    }
+  }
 )
 
 async function refresh(key?: string) {
@@ -357,10 +362,8 @@ async function onPrevUsrSelect(key: string) {
     prev.auth.reset()
     prev.auth.canAddNum = '*'
     prev.tblProps.addable = true
-    prev.tblProps.edtable = true
-    prev.tblProps.edtKeys = ['*']
+    prev.tblProps.editable = true
     prev.tblProps.delable = true
-    prev.tblProps.delKeys = ['*']
     prev.tblProps.count = 0
     emitter.emit('refresh')
     return
@@ -368,35 +371,32 @@ async function onPrevUsrSelect(key: string) {
   const user = (shareTable.selected.fkUsers as StUser[]).find(usr => usr.key === key) as StUser
   Auth.copy(user.auth, prev.auth, true)
   prev.tblProps.count = await api.shareTable.data(shareTable.selected.key).count(key)
-  const myRcds = await api.shareTable
-    .data(shareTable.selected.key)
-    .ownByWho(user.key)
-    .then(records => records.map(record => record.key))
   prev.tblProps.addable =
     !prev.visible ||
     (prev.auth.addable &&
       (prev.auth.canAddNum === '*' || prev.tblProps.count < prev.auth.canAddNum))
-  prev.tblProps.edtable = !prev.visible || prev.auth.updatable
-  prev.tblProps.delable = !prev.visible || prev.auth.deletable
-  const allRcds = await api.shareTable.data(shareTable.selected.key).all()
   if (prev.visible) {
     if (prev.auth.updOnlyOwn) {
-      prev.tblProps.edtKeys = myRcds
+      const keys = await api.shareTable
+        .data(shareTable.selected.key)
+        .ownByWho(user.key)
+        .then(records => records.map(record => record.key))
+      prev.tblProps.editable = (record: any) => keys.includes(record.key)
     } else {
-      prev.tblProps.edtKeys = prev.auth
-        .canOperRows('canUpdRows', allRcds)
-        .map(rcd => rcd.key || rcd)
+      prev.tblProps.editable = (record: any) => prev.auth.canOperRow('canUpdRows', record)
     }
     if (prev.auth.delOnlyOwn) {
-      prev.tblProps.delKeys = myRcds
+      const keys = await api.shareTable
+        .data(shareTable.selected.key)
+        .ownByWho(user.key)
+        .then(records => records.map(record => record.key))
+      prev.tblProps.delable = (record: any) => keys.includes(record.key)
     } else {
-      prev.tblProps.delKeys = prev.auth
-        .canOperRows('canDelRows', allRcds)
-        .map(rcd => rcd.key || rcd)
+      prev.tblProps.delable = (record: any) => prev.auth.canOperRow('canDelRows', record)
     }
   } else {
-    prev.tblProps.edtKeys = ['*']
-    prev.tblProps.delKeys = ['*']
+    prev.tblProps.editable = !prev.visible || prev.auth.updatable
+    prev.tblProps.delable = !prev.visible || prev.auth.deletable
   }
   emitter.emit('refresh')
 }
@@ -489,6 +489,7 @@ function onShareTableClick() {
           v-if="shareTable.type === 'opLog'"
           thd-class="px-0 py-2"
           size="small"
+          :pagable="true"
           :api="api.shareTable.opLog(shareTable.selected.key)"
           :columns="[
             new Column('用户', 'fkUser'),
@@ -550,10 +551,8 @@ function onShareTableClick() {
           :mapper="mapper"
           :columns="columns"
           :addable="shareTable.preview.tblProps.addable"
-          :editable="shareTable.preview.tblProps.edtable"
-          :edtable-keys="shareTable.preview.tblProps.edtKeys"
+          :editable="shareTable.preview.tblProps.editable"
           :delable="shareTable.preview.tblProps.delable"
-          :delable-keys="shareTable.preview.tblProps.delKeys"
           :new-fun="() => newObjByMapper(mapper)"
         >
           <template v-if="!shareTable.preview.visible" #title>

@@ -107,9 +107,12 @@ export default class Auth implements AuthInterface {
   }
 
   canOperRow(oper: 'canDelRows' | 'canUpdRows' | 'canQryRows', record: any): boolean {
+    if (this[oper].length === 1 && !this[oper][0].prop && !this[oper][0].value) {
+      return true
+    }
     return this[oper].reduce(
       (ret: boolean, cond: AuCond) => Auth._relDict[cond.relate](record, ret, cond),
-      true
+      false
     )
   }
 

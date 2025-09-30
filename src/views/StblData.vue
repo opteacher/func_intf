@@ -10,12 +10,11 @@ import Mapper, { newObjByMapper } from '@lib/types/mapper'
 import { LogoutOutlined, UserOutlined, DatabaseOutlined } from '@ant-design/icons-vue'
 import STable from '@/types/sTable'
 import StUser from '@/types/stUser'
-import { getProp, pickOrIgnore, setProp } from '@lib/utils'
+import { pickOrIgnore, setProp } from '@lib/utils'
 import FormGroup from '@lib/components/FormGroup.vue'
 import { useLoginStore } from '@/stores/login'
 import { storeToRefs } from 'pinia'
 import type StRcd from '@/types/stRecord'
-import type { AuCond } from '@/types/stAuth'
 
 const route = useRoute()
 const router = useRouter()
@@ -35,14 +34,28 @@ const login = reactive({
 })
 const { user: lgnUsr } = storeToRefs(store)
 const count = ref(0)
-const usrAddable = computed(
+const addable = computed(
   () =>
     !route.query.pickMode &&
     lgnUsr.value?.auth.addable &&
     (lgnUsr.value?.auth.canAddNum === '*' || count.value < lgnUsr.value?.auth.canAddNum)
 )
-const usrEdtable = computed(() => !route.query.pickMode && lgnUsr.value?.auth.updatable)
-const usrDelable = computed(() => !route.query.pickMode && lgnUsr.value?.auth.deletable)
+const editable = (record: any) => {
+  if (!(!route.query.pickMode && lgnUsr.value?.auth.updatable)) {
+    return false
+  }
+  return lgnUsr.value?.auth.updOnlyOwn
+    ? ownRcds.includes(record.key)
+    : lgnUsr.value?.auth.canOperRow('canUpdRows', record)
+}
+const delable = (record: any) => {
+  if (!(!route.query.pickMode && lgnUsr.value?.auth.deletable)) {
+    return false
+  }
+  return lgnUsr.value?.auth.delOnlyOwn
+    ? ownRcds.includes(record.key)
+    : lgnUsr.value?.auth.canOperRow('canDelRows', record)
+}
 const ownRcds = reactive<string[]>([])
 
 onMounted(async () => {
@@ -230,11 +243,9 @@ function filterDataByAuth(record: any) {
     :filter="filterDataByAuth"
     :mapper="mapper"
     :columns="columns"
-    :addable="usrAddable"
-    :editable="usrEdtable"
-    :edtable-keys="lgnUsr?.auth.updOnlyOwn ? ownRcds : []"
-    :delable="usrDelable"
-    :delable-keys="lgnUsr?.auth.delOnlyOwn ? ownRcds : []"
+    :addable="addable"
+    :editable="editable"
+    :delable="delable"
     :new-fun="() => newObjByMapper(mapper)"
     @refresh="refresh"
   >

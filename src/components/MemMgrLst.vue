@@ -85,6 +85,7 @@ const authTable = reactive({
       title: '增',
       dataIndex: 'add',
       key: 'add',
+      width: 250,
       align: 'center'
     },
     {
@@ -506,7 +507,11 @@ async function onBatImpUsrSubmit(info: BatImp) {
             只可{{ getProp(operDict, column.dataIndex + '[3]') }}自己创建的记录
           </a-checkbox>
         </a-space>
-        <a-form v-else-if="record.desc === '操作对象'" :model="userList.formState.auth">
+        <a-form
+          v-else-if="record.desc === '操作对象'"
+          :layout="column.dataIndex === 'add' ? 'vertical' : 'horizontal'"
+          :model="userList.formState.auth"
+        >
           <a-form-item v-if="column.dataIndex === 'desc'" label="操作对象">
             <a-tooltip placement="topLeft">
               <template #title>如需操作所有行/单元格，直接使用【*】符号</template>
@@ -516,10 +521,20 @@ async function onBatImpUsrSubmit(info: BatImp) {
           <a-form-item v-if="column.dataIndex === 'add'" label="可新增的记录数" name="canAddNum">
             <a-input
               :disabled="!userList.formState.auth.addable"
-              type="number"
+              :type="userList.formState.auth.canAddNum === '*' ? 'text' : 'number'"
               placeholder="记录数"
               v-model:value="userList.formState.auth.canAddNum"
-            />
+            >
+              <template #suffix>
+                <a-button
+                  size="small"
+                  type="text"
+                  @click="() => (userList.formState.auth.canAddNum = '*')"
+                >
+                  无限制
+                </a-button>
+              </template>
+            </a-input>
           </a-form-item>
           <OpSubFmItm
             v-else-if="['delete', 'update', 'query'].includes(column.dataIndex)"

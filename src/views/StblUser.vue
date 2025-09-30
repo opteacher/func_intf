@@ -7,7 +7,6 @@ import Mapper, { BaseMapper, mapTypeTemps } from '@lib/types/mapper'
 import StUser from '@/types/stUser'
 import { onMounted, reactive, ref } from 'vue'
 import Auth, { type AuthInterface } from '@/types/stAuth'
-import NumPairLst from '@/components/NumPairLst.vue'
 import {
   TeamOutlined,
   MinusCircleOutlined,
@@ -369,46 +368,41 @@ function onUsrExtCancel(visible: boolean) {
             只可{{ getProp(operDict, column.dataIndex + '[2]') }}自己创建的记录
           </a-checkbox>
         </a-space>
-        <a-form v-else-if="record.desc === '操作对象'" layout="vertical">
+        <a-form
+          v-else-if="record.desc === '操作对象'"
+          :layout="column.dataIndex === 'add' ? 'vertical' : 'horizontal'"
+          :model="userTable.formState.auth"
+        >
           <a-form-item v-if="column.dataIndex === 'desc'" label="操作对象">
-            <a-typography-text type="secondary">
-              如需操作所有行/单元格，直接使用【*】符号
-            </a-typography-text>
+            <a-tooltip placement="topLeft">
+              <template #title>如需操作所有行/单元格，直接使用【*】符号</template>
+              <InfoCircleOutlined />
+            </a-tooltip>
           </a-form-item>
-          <a-form-item v-if="column.dataIndex === 'add'" label="可添加的记录数">
+          <a-form-item v-if="column.dataIndex === 'add'" label="可新增的记录数" name="canAddNum">
             <a-input
               :disabled="!userTable.formState.auth.addable"
-              type="number"
+              :type="userTable.formState.auth.canAddNum === '*' ? 'text' : 'number'"
               placeholder="记录数"
               v-model:value="userTable.formState.auth.canAddNum"
-            />
+            >
+              <template #suffix>
+                <a-button
+                  size="small"
+                  type="text"
+                  @click="() => (userTable.formState.auth.canAddNum = '*')"
+                >
+                  无限制
+                </a-button>
+              </template>
+            </a-input>
           </a-form-item>
-          <a-form-item v-else-if="column.dataIndex === 'delete'">
-            <template #label>
-              可删除的行数&nbsp;
-              <a-typography-text type="secondary">结束行不填代表指定行</a-typography-text>
-            </template>
-            <NumPairLst
-              v-model:num-pair-list="userTable.formState.auth.canDelRows"
-              :disabled="!userTable.formState.auth.deletable || userTable.formState.auth.delOnlyOwn"
-            />
-          </a-form-item>
-          <a-form-item v-else-if="column.dataIndex === 'update'" label="可修改的行/单元格">
-            <NumPairLst
-              v-model:num-pair-list="userTable.formState.auth.canUpdRows"
-              :disabled="!userTable.formState.auth.updatable || userTable.formState.auth.updOnlyOwn"
-              :placeholder="['行号', '列号']"
-              split-letter="/"
-            />
-          </a-form-item>
-          <a-form-item v-else-if="column.dataIndex === 'query'" label="可修改的行/单元格">
-            <NumPairLst
-              v-model:num-pair-list="userTable.formState.auth.canQryRows"
-              :disabled="!userTable.formState.auth.queriable || userTable.formState.auth.qryOnlyOwn"
-              :placeholder="['行号', '列号']"
-              split-letter="/"
-            />
-          </a-form-item>
+          <OpSubFmItm
+            v-else-if="['delete', 'update', 'query'].includes(column.dataIndex)"
+            v-model:auth="userTable.formState.auth"
+            :stable="stable"
+            :op-ary="operDict[column.dataIndex as 'delete' | 'update' | 'query']"
+          />
         </a-form>
       </template>
     </a-table>

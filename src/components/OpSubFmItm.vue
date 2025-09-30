@@ -6,15 +6,18 @@
     :fld-wid="24"
     @update:fprop="onFpropUpdate"
   >
-    <template #itemLabel="{ item, index }: { item: AuCond, index: number }">
-      <b v-if="!item.prop && !item.value">可编辑所有记录</b>
+    <template #addSFX>
+      <a-button @click="onOperAllClick">{{ opAry[3] }}全部</a-button>
+    </template>
+    <template #itemLabel="{ item, index }: any">
+      <b v-if="!item.prop && !item.value">可{{ opAry[3] }}所有记录</b>
       <a-space v-else>
-        <a-tag>{{ index !== 0 ? relDict[item.relate] : '当' }}</a-tag>
+        <a-tag>{{ index !== 0 ? getProp(relDict, item.relate) : '当' }}</a-tag>
         <a-typography-text strong>
           {{ bsOpMapper.lblDict[item.prop] }}
         </a-typography-text>
         <a-typography-text :type="item.compare === '==' ? 'success' : 'danger'">
-          {{ cmpDict[item.compare] }}
+          {{ getProp(cmpDict, item.compare) }}
         </a-typography-text>
         <a-typography-text type="secondary">{{ item.value }}</a-typography-text>
       </a-space>
@@ -75,15 +78,7 @@ const bsOpMapper = reactive<EdtLstMapper>({
       label: '对应值',
       type: 'SelOrIpt',
       mode: 'select'
-    },
-    // opAll: {
-    //   type: 'Button',
-    //   offset: 4,
-    //   inner: `可${props.opAry[3]}所有记录`,
-    //   onClick: () => {
-    //     setProp(props.auth, props.opAry[2], [new AuCond()])
-    //   }
-    // }
+    }
   }),
   newFun: () => ({ relate: '&&', prop: undefined, compare: '==', value: '' }),
   inline: false
@@ -109,8 +104,11 @@ const opSubMapper = computed(() =>
 function onFpropUpdate(auth: AuthInterface) {
   if (getProp(auth, props.opAry[2]).length === 1) {
     // 当只有一条条件的时候，关系符号设为或
-    setProp(auth, props.opAry[2] + '.relate', '||')
+    setProp(auth, props.opAry[2] + '[0].relate', '||')
   }
   emit('update:auth', setProp(props.auth, props.opAry[2], getProp(auth, props.opAry[2])))
+}
+function onOperAllClick() {
+  setProp(props.auth, props.opAry[2], [new AuCond()])
 }
 </script>
