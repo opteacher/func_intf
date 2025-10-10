@@ -379,7 +379,7 @@ async function onPrevUsrSelect(key: string) {
     if (prev.auth.updOnlyOwn) {
       const keys = await api.shareTable
         .data(shareTable.selected.key)
-        .ownByWho(user.key)
+        .all({ axiosConfig: { params: { uid: user.key } } })
         .then(records => records.map(record => record.key))
       prev.tblProps.editable = (record: any) => keys.includes(record.key)
     } else {
@@ -388,7 +388,7 @@ async function onPrevUsrSelect(key: string) {
     if (prev.auth.delOnlyOwn) {
       const keys = await api.shareTable
         .data(shareTable.selected.key)
-        .ownByWho(user.key)
+        .all({ axiosConfig: { params: { uid: user.key } } })
         .then(records => records.map(record => record.key))
       prev.tblProps.delable = (record: any) => keys.includes(record.key)
     } else {
@@ -534,6 +534,7 @@ function onShareTableClick() {
           :title="shareTable.preview.visible ? shareTable.selected.name : undefined"
           :rounded="false"
           :size="shareTable.selected.size"
+          :pagable="true"
           :im-export="
             shareTable.preview.visible
               ? false

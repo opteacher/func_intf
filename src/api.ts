@@ -261,7 +261,7 @@ const expIns = {
       update: (stable: any) =>
         reqPut('stable', stable.key, stable, {
           ...stblOpns,
-          ignores: ['fkUsers', 'fkRecords']
+          ignores: ['fkUsers']
         }),
       remove: (stable: STable) => reqDelete('stable', stable.key, { ...stblOpns, type: 'api' })
     },
@@ -313,13 +313,20 @@ const expIns = {
         })
     }),
     data: (tid = router.currentRoute.value.query.tid as string) => ({
-      all: () =>
-        reqGet<STable>('stable', tid, {
-          ...stblOpns,
-          copy: STable.copy
-        }).then(stbl =>
-          (stbl.fkRecords as StRcd[]).map(rcd => ({ key: rcd.key, fkUser: rcd.fkUser, ...rcd.raw }))
-        ),
+      all: async (options?: RequestOptions) => {
+        return reqAll<StRcd>('record', {
+          project: 'share-table',
+          copy: StRcd.copy,
+          axiosConfig: {
+            baseURL: stableURL,
+            params: {
+              fkStable: tid,
+              ...pickOrIgnore(options?.axiosConfig?.params || {}, ['uid']),
+              fkUser: options?.axiosConfig?.params.uid
+            }
+          }
+        }).then(rcds => rcds.map(rcd => ({ key: rcd.key, fkUser: rcd.fkUser, ...rcd.raw })))
+      },
       add: (raw: any) =>
         reqPost<StRcd>(`stable/${tid}/record`, raw, {
           project: stblOpns.project,
@@ -353,8 +360,8 @@ const expIns = {
       remove: async (stRcd: StRcd) => {
         await reqLink(
           {
-            parent: ['stable', tid],
-            child: ['fkRecords', stRcd.key]
+            parent: ['record', stRcd.key],
+            child: ['fkStable', tid]
           },
           false,
           stblOpns
@@ -375,16 +382,7 @@ const expIns = {
               type: 'api',
               axiosConfig: { baseURL: stableURL, params: { uid } }
             }).then(data => parseInt(data))
-          : Promise.resolve(0),
-      ownByWho: (uid: string) =>
-        reqGet<STable>('stable', tid, {
-          ...stblOpns,
-          copy: STable.copy
-        }).then(stbl =>
-          (stbl.fkRecords as StRcd[])
-            .filter(rcd => rcd.fkUser === uid)
-            .map(rcd => ({ key: rcd.key, fkUser: rcd.fkUser, ...rcd.raw }))
-        )
+          : Promise.resolve(0)
     }),
     opLog: (tid = router.currentRoute.value.query.tid as string) => ({
       all: () =>

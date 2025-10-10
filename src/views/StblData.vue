@@ -14,7 +14,6 @@ import { pickOrIgnore, setProp } from '@lib/utils'
 import FormGroup from '@lib/components/FormGroup.vue'
 import { useLoginStore } from '@/stores/login'
 import { storeToRefs } from 'pinia'
-import type StRcd from '@/types/stRecord'
 
 const route = useRoute()
 const router = useRouter()
@@ -76,9 +75,10 @@ async function refresh() {
   ownRcds.splice(
     0,
     ownRcds.length,
-    ...(stable.fkRecords as StRcd[])
-      .filter(rcd => rcd.fkUser === store.user?.key)
-      .map(rcd => rcd.key)
+    ...(await api.shareTable
+      .data()
+      .all({ axiosConfig: { params: { uid: store.user?.key } } })
+      .then(rcds => rcds.map(rcd => rcd.key)))
   )
 }
 async function onSubmit() {

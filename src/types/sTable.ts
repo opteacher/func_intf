@@ -20,7 +20,6 @@ export default class STable {
   usrExtra: Mapper
   tempAuth: Auth
   fkUsers: (StUser | string)[]
-  fkRecords: (StRcd | string)[]
   fkOplogs: (StOpLog | string)[]
 
   constructor() {
@@ -35,7 +34,6 @@ export default class STable {
     this.usrExtra = new Mapper()
     this.tempAuth = new Auth()
     this.fkUsers = []
-    this.fkRecords = []
     this.fkOplogs = []
   }
 
@@ -51,7 +49,6 @@ export default class STable {
     this.usrExtra = new Mapper()
     this.tempAuth = new Auth()
     this.fkUsers = []
-    this.fkRecords = []
     this.fkOplogs = []
   }
 
@@ -62,7 +59,6 @@ export default class STable {
         usrExtra: cloneDeep,
         tempAuth: Auth.copy,
         fkUsers: StUser.copy,
-        fkRecords: StRcd.copy,
         fkOpLogs: StOpLog.copy
       }
     })

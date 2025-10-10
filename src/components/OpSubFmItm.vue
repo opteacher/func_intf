@@ -60,12 +60,12 @@ const bsOpMapper = reactive<EdtLstMapper>({
       type: 'Select',
       options: Object.entries(props.stable.form).map(([value, { label }]) => ({ value, label })),
       onChange: (_record: any, to: any) => {
-        bsOpMapper.mapper['value'].options = uniq(
-          (props.stable.fkRecords as StRcd[]).map(record => getProp(record.raw, to))
-        ).map(item => ({
-          label: item,
-          value: item
-        }))
+        // bsOpMapper.mapper['value'].options = uniq(
+        //   (props.stable.fkRecords as StRcd[]).map(record => getProp(record.raw, to))
+        // ).map(item => ({
+        //   label: item,
+        //   value: item
+        // }))
       }
     },
     compare: {
