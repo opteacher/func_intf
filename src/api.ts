@@ -314,7 +314,7 @@ const expIns = {
     }),
     data: (tid = router.currentRoute.value.query.tid as string) => ({
       all: async (options?: RequestOptions) => {
-        return reqAll<StRcd>('record', {
+        const records = await reqAll<StRcd>('record', {
           project: 'share-table',
           copy: StRcd.copy,
           axiosConfig: {
@@ -325,7 +325,17 @@ const expIns = {
               fkUser: options?.axiosConfig?.params.uid
             }
           }
-        }).then(rcds => rcds.map(rcd => ({ key: rcd.key, fkUser: rcd.fkUser, ...rcd.raw })))
+        })
+        if (options?.axiosConfig?.params.wrapCols) {
+          const wrapCols = options.axiosConfig.params.wrapCols
+          console.log(records.length / (wrapCols + 1))
+          for (let colIdx = 0; colIdx < wrapCols; ++colIdx) {
+            // TODO: 分表
+          }
+          return []
+        } else {
+          return records.map(rcd => ({ key: rcd.key, fkUser: rcd.fkUser, ...rcd.raw }))
+        }
       },
       add: (raw: any) =>
         reqPost<StRcd>(`stable/${tid}/record`, raw, {
@@ -382,7 +392,15 @@ const expIns = {
               type: 'api',
               axiosConfig: { baseURL: stableURL, params: { uid } }
             }).then(data => parseInt(data))
-          : Promise.resolve(0)
+          : Promise.resolve(0),
+      column: {
+        allUniq: (colKey: string) =>
+          reqGet<any[]>(`stable/${tid}`, `column/${colKey}`, {
+            ...stblOpns,
+            type: 'api',
+            action: 'uniq'
+          })
+      }
     }),
     opLog: (tid = router.currentRoute.value.query.tid as string) => ({
       all: () =>

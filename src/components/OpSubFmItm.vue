@@ -28,12 +28,11 @@
 <script setup lang="ts">
 import type STable from '@/types/sTable'
 import Auth, { AuCond, type AuthInterface, cmpDict, relDict } from '@/types/stAuth'
-import type StRcd from '@/types/stRecord'
 import FormItem from '@lib/components/FormItem.vue'
 import Mapper, { EdtLstMapper } from '@lib/types/mapper'
 import { getProp, setProp } from '@lib/utils'
-import { uniq } from 'lodash'
 import { computed, reactive, type PropType } from 'vue'
+import api from '@/api'
 
 const props = defineProps({
   auth: { type: Auth, required: true },
@@ -59,13 +58,12 @@ const bsOpMapper = reactive<EdtLstMapper>({
       label: '数据列',
       type: 'Select',
       options: Object.entries(props.stable.form).map(([value, { label }]) => ({ value, label })),
-      onChange: (_record: any, to: any) => {
-        // bsOpMapper.mapper['value'].options = uniq(
-        //   (props.stable.fkRecords as StRcd[]).map(record => getProp(record.raw, to))
-        // ).map(item => ({
-        //   label: item,
-        //   value: item
-        // }))
+      onChange: async (_record: any, to: any) => {
+        const unqAry = await api.shareTable.data(props.stable.key).column.allUniq(to)
+        bsOpMapper.mapper['value'].options = unqAry.map(item => ({
+          label: item,
+          value: item
+        }))
       }
     },
     compare: {

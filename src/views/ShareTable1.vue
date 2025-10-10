@@ -30,6 +30,8 @@ import type StUser from '@/types/stUser'
 import Auth from '@/types/stAuth'
 import router from '@/router'
 import { operDict } from '@/types/stOpLog'
+import StView from '@/types/stView'
+import SelOrIpt from '@lib/components/SelOrIpt.vue'
 
 const layout = reactive({
   rgtEmitter: new TinyEmitter(),
@@ -121,7 +123,7 @@ const shareTable = reactive({
       }
     }
   },
-  type: 'data' as 'data' | 'opLog'
+  type: 'data' as 'data' | 'view' | 'opLog'
 })
 const emitter = new TinyEmitter()
 const columns = computed<Column[]>(() =>
@@ -223,6 +225,13 @@ const userOpns = computed<{ label: string; value: string }[]>(() =>
     (shareTable.selected.fkUsers as StUser[]).map(usr => ({ label: usr.lgnIden, value: usr.key }))
   )
 )
+const stblView = reactive({
+  form: new StView()
+})
+const viewCols = computed<Column[]>(() => {
+  nextTick(() => emitter.emit('refresh'))
+  return Array.from({ length: stblView.form.wrapCols + 1 }, () => columns.value).flat()
+})
 
 onMounted(refresh)
 watch(
@@ -505,6 +514,7 @@ function onShareTableClick() {
           <template #title>
             <a-radio-group v-model:value="shareTable.type" @change="() => emitter.emit('refresh')">
               <a-radio-button value="data">数据表</a-radio-button>
+              <a-radio-button value="view">视图</a-radio-button>
               <a-radio-button value="opLog">操作日志</a-radio-button>
             </a-radio-group>
           </template>
@@ -525,6 +535,62 @@ function onShareTableClick() {
             <pre v-else class="whitespace-pre-wrap break-words">{{
               JSON.stringify(record.latter)
             }}</pre>
+          </template>
+        </EditableTable>
+        <EditableTable
+          v-else-if="shareTable.type === 'view'"
+          thd-class="px-0 py-2"
+          :title="shareTable.preview.visible ? shareTable.selected.name : undefined"
+          :rounded="false"
+          :size="stblView.form.size"
+          :im-export="false"
+          :emitter="emitter"
+          :api="{
+            all: () =>
+              api.shareTable
+                .data(shareTable.selected.key)
+                .all({ axiosConfig: { params: stblView.form } })
+          }"
+          :mapper="mapper"
+          :columns="viewCols"
+          :addable="false"
+          :editable="false"
+          :delable="false"
+          :new-fun="() => newObjByMapper(mapper)"
+        >
+          <template v-if="!shareTable.preview.visible" #title>
+            <a-radio-group v-model:value="shareTable.type" @change="() => emitter.emit('refresh')">
+              <a-radio-button value="data">数据表</a-radio-button>
+              <a-radio-button value="view">视图</a-radio-button>
+              <a-radio-button value="opLog">操作日志</a-radio-button>
+            </a-radio-group>
+          </template>
+          <template #extra>
+            <SelOrIpt v-model:value="stblView.form.key" />
+            <a-select
+              :options="[
+                { label: '表视图', value: 'table' },
+                { label: '图视图', value: 'chart' }
+              ]"
+              v-model:value="stblView.form.vtype"
+            />
+            <a-button type="primary">保存当前视图</a-button>
+          </template>
+          <template #hdContent>
+            <a-descriptions size="small" :column="4">
+              <a-descriptions-item label="尺寸">
+                <a-radio-group v-model:value="stblView.form.size" size="small">
+                  <a-radio-button value="large">大</a-radio-button>
+                  <a-radio-button value="middle">中</a-radio-button>
+                  <a-radio-button value="small">小</a-radio-button>
+                </a-radio-group>
+              </a-descriptions-item>
+              <a-descriptions-item label="折列">
+                <a-input-number v-model:value="stblView.form.wrapCols" size="small" :min="0" />
+              </a-descriptions-item>
+              <a-descriptions-item label="Creation Time">2017-01-10</a-descriptions-item>
+              <a-descriptions-item label="Effective Time">2017-10-10</a-descriptions-item>
+            </a-descriptions>
           </template>
         </EditableTable>
         <EditableTable
@@ -559,6 +625,7 @@ function onShareTableClick() {
           <template v-if="!shareTable.preview.visible" #title>
             <a-radio-group v-model:value="shareTable.type" @change="() => emitter.emit('refresh')">
               <a-radio-button value="data">数据表</a-radio-button>
+              <a-radio-button value="view">视图</a-radio-button>
               <a-radio-button value="opLog">操作日志</a-radio-button>
             </a-radio-group>
           </template>
