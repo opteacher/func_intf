@@ -11,6 +11,10 @@ export default class StView {
   size: 'small' | 'middle' | 'large'
   wrap: number
   group: string
+  grpCfg: {
+    priority: string[]
+    bold: boolean
+  }
 
   constructor() {
     this.key = ''
@@ -19,6 +23,10 @@ export default class StView {
     this.size = 'large'
     this.wrap = 0
     this.group = ''
+    this.grpCfg = {
+      priority: [],
+      bold: false
+    }
   }
 
   reset() {
@@ -28,6 +36,8 @@ export default class StView {
     this.size = 'large'
     this.wrap = 0
     this.group = ''
+    this.grpCfg.priority = []
+    this.grpCfg.bold = false
   }
 
   static copy(src: any, tgt?: StView, force = false): StView {
@@ -51,7 +61,7 @@ export function genViewRefresh(stable: STable, sview: StView) {
         const unqAry = Object.entries(unqDict).sort((a, b) => b[1] - a[1])
         const colsExpGrp = Object.keys(stable.form).filter(k => k !== sview.group)
         for (const [value, index] of unqAry) {
-          fixRcds.splice(index, 0, { [colsExpGrp[0]]: value })
+          fixRcds.splice(index, 0, { [colsExpGrp[0]]: value, _grpCols: colsExpGrp })
         }
       }
       if (sview.wrap) {
@@ -66,10 +76,11 @@ export function genViewRefresh(stable: STable, sview: StView) {
               break
             }
             rcdAry.push(
-              ...(Object.entries(fixRcds[i + fixLen * j]).map(([key, value]) => [
-                [key, j].join('_'),
-                value
-              ]) as [string, any][])
+              ...(Object.entries(fixRcds[i + fixLen * j]).map(([key, value]: any) =>
+                key !== '_grpCols'
+                  ? [[key, j].join('_'), value]
+                  : ['_grpCols', value.map((v: string) => [v, j].join('_'))]
+              ) as [string, any][])
             )
           }
           rcds.push(Object.fromEntries(rcdAry))
@@ -83,21 +94,20 @@ export function genViewRefresh(stable: STable, sview: StView) {
 
 export function genViewColumns(stable: STable, sview: StView) {
   const fmExpGrp = Object.entries(stable.form).filter(([key]) => sview.group !== key)
-  const genCell = (key: string) => ({
-    custCell: (record: any) => {
-      const rcdKeys = record ? Object.keys(record) : []
-      return sview.group &&
-        fmExpGrp[0][0] === key &&
-        record &&
-        rcdKeys.length === 1 &&
-        rcdKeys[0] === sview.group
-        ? { colSpan: fmExpGrp.length }
-        : undefined
-    }
-  })
   return Array.from({ length: sview.wrap + 1 }, (_v, i) =>
-    fmExpGrp.map(
-      ([key, { label }]) => new Column(label, i ? [key, i].join('_') : key, genCell(key))
-    )
+    fmExpGrp.map(([key, { label }]) => {
+      const dataIndex = i ? [key, i].join('_') : key
+      return new Column(label, dataIndex, {
+        custCell: (record: any) => {
+          if (sview.group && record._grpCols) {
+            if (record._grpCols[0] === dataIndex) {
+              return { colSpan: fmExpGrp.length, align: 'center' }
+            } else if (record._grpCols.includes(dataIndex)) {
+              return { colSpan: 0 }
+            }
+          }
+        }
+      })
+    })
   ).flat()
 }

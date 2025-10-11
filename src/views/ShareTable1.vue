@@ -21,7 +21,8 @@ import {
   PlusOutlined,
   SettingOutlined,
   EyeOutlined,
-  ShareAltOutlined
+  ShareAltOutlined,
+  MoreOutlined
 } from '@ant-design/icons-vue'
 import { Modal } from 'ant-design-vue'
 import MemMgrList from '@/components/MemMgrLst.vue'
@@ -227,7 +228,18 @@ const userOpns = computed<{ label: string; value: string }[]>(() =>
 )
 const stblView = reactive({
   form: new StView(),
-  nameMode: 'input' as 'input' | 'select'
+  nameMode: 'input' as 'input' | 'select',
+  mapper: new Mapper({
+    'grpCfg.priority': {
+      type: 'Unknown',
+      label: '优先级'
+    },
+    'grpCfg.bold': {
+      type: 'Switch',
+      label: '加粗'
+    }
+  }),
+  emitter: new TinyEmitter()
 })
 const viewCols = computed<Column[]>(() => {
   nextTick(() => emitter.emit('refresh'))
@@ -443,6 +455,10 @@ function onSvwNameChange(selName: string) {
     }
   }
 }
+function onGrpCfgSubmit(form: any, done: Function) {
+  console.log(form)
+  done()
+}
 </script>
 
 <template>
@@ -508,6 +524,7 @@ function onSvwNameChange(selName: string) {
           当前视图：
           <a-select
             class="min-w-32"
+            allowClear
             :options="storeVwOpns"
             v-model:value="stblView.form.name"
             @select="onSvwNameChange"
@@ -626,13 +643,29 @@ function onSvwNameChange(selName: string) {
                 <a-input-number v-model:value="stblView.form.wrap" size="small" :min="0" />
               </a-descriptions-item>
               <a-descriptions-item label="分组">
-                <a-select
-                  class="min-w-[33%]"
-                  :options="columns.map(col => ({ label: col.title, value: col.dataIndex }))"
-                  v-model:value="stblView.form.group"
-                  size="small"
-                  @change="() => emitter.emit('refresh')"
-                />
+                <a-input-group compact>
+                  <a-select
+                    class="min-w-[33%]"
+                    allowClear
+                    :options="columns.map(col => ({ label: col.title, value: col.dataIndex }))"
+                    v-model:value="stblView.form.group"
+                    size="small"
+                    @change="() => emitter.emit('refresh')"
+                  />
+                  <a-button
+                    size="small"
+                    :disabled="!stblView.form.group"
+                    @click="
+                      () =>
+                        stblView.emitter.emit('update:visible', {
+                          show: true,
+                          object: stblView.form.grpCfg
+                        })
+                    "
+                  >
+                    <template #icon><MoreOutlined /></template>
+                  </a-button>
+                </a-input-group>
               </a-descriptions-item>
             </a-descriptions>
           </template>
@@ -700,6 +733,18 @@ function onSvwNameChange(selName: string) {
           </template>
         </EditableTable>
       </div>
+      <FormDialog
+        title="分组高级配置"
+        :mapper="stblView.mapper"
+        :emitter="stblView.emitter"
+        :new-fun="
+          () => ({
+            priority: [],
+            bold: false
+          })
+        "
+        @submit="onGrpCfgSubmit"
+      />
       <FormDialog
         title="添加列"
         :mapper="addColumn.mapper"
