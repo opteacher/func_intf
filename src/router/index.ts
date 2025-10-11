@@ -17,6 +17,7 @@ import ShareTable from '../views/ShareTable.vue'
 import StblUser from '../views/StblUser.vue'
 import StblData from '../views/StblData.vue'
 import ShareTable1 from '../views/ShareTable1.vue'
+import StblView from '../views/StblView.vue'
 
 const routes: Array<RouteRecordRaw> = [
   {
@@ -121,6 +122,11 @@ const routes: Array<RouteRecordRaw> = [
     path: '/func_intf/share_table/table1',
     name: 'share_tableTable1',
     component: ShareTable1
+  },
+  {
+    path: '/func_intf/share_table/view',
+    name: 'share_tableView',
+    component: StblView
   }
 ]
 

@@ -1,12 +1,12 @@
 import Mapper, { EdtLstMapper } from '@lib/types/mapper'
 import { gnlCpy } from '@lib/utils'
 import StUser from './stUser'
-import StRcd from './stRecord'
 import { Cond } from '@lib/types'
 import { cloneDeep } from 'lodash'
 import Auth from './stAuth'
 import StOpLog from './stOpLog'
 import type { SizeType } from 'ant-design-vue/es/config-provider'
+import StView from './stView'
 
 export default class STable {
   key: string
@@ -21,6 +21,7 @@ export default class STable {
   tempAuth: Auth
   fkUsers: (StUser | string)[]
   fkOplogs: (StOpLog | string)[]
+  fkViews: (StView | string)[]
 
   constructor() {
     this.key = ''
@@ -35,6 +36,7 @@ export default class STable {
     this.tempAuth = new Auth()
     this.fkUsers = []
     this.fkOplogs = []
+    this.fkViews = []
   }
 
   reset() {
@@ -50,6 +52,7 @@ export default class STable {
     this.tempAuth = new Auth()
     this.fkUsers = []
     this.fkOplogs = []
+    this.fkViews = []
   }
 
   static copy(src: any, tgt?: STable, force = false): STable {
@@ -59,7 +62,8 @@ export default class STable {
         usrExtra: cloneDeep,
         tempAuth: Auth.copy,
         fkUsers: StUser.copy,
-        fkOpLogs: StOpLog.copy
+        fkOpLogs: StOpLog.copy,
+        fkViews: StView.copy
       }
     })
   }

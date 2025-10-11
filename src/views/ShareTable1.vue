@@ -30,7 +30,7 @@ import type StUser from '@/types/stUser'
 import Auth from '@/types/stAuth'
 import router from '@/router'
 import { operDict } from '@/types/stOpLog'
-import StView from '@/types/stView'
+import StView, { genViewColumns, genViewRefresh } from '@/types/stView'
 import SelOrIpt from '@lib/components/SelOrIpt.vue'
 
 const layout = reactive({
@@ -226,12 +226,16 @@ const userOpns = computed<{ label: string; value: string }[]>(() =>
   )
 )
 const stblView = reactive({
-  form: new StView()
+  form: new StView(),
+  nameMode: 'input' as 'input' | 'select'
 })
 const viewCols = computed<Column[]>(() => {
   nextTick(() => emitter.emit('refresh'))
-  return Array.from({ length: stblView.form.wrapCols + 1 }, () => columns.value).flat()
+  return genViewColumns(shareTable.selected, stblView.form)
 })
+const storeVwOpns = computed(() =>
+  (shareTable.selected.fkViews as StView[]).map(vw => ({ value: vw.name, label: vw.name }))
+)
 
 onMounted(refresh)
 watch(
@@ -411,10 +415,33 @@ async function onPrevUsrSelect(key: string) {
 }
 function onShareTableClick() {
   const url = router.resolve({
-    path: '/func_intf/share_table/data',
-    query: { tid: shareTable.selected.key, fullView: 1 }
+    path: `/func_intf/share_table/${shareTable.type}`,
+    query: { tid: shareTable.selected.key, vid: stblView.form.key, fullView: 1 }
   })
   window.open(url.href, '_blank')
+}
+function onStVwSaveClick() {
+  Modal.confirm({
+    title: '确定保存该视图？',
+    icon: createVNode(ExclamationCircleOutlined),
+    content: createVNode('div', undefined, `视图名为：${stblView.form.name}`),
+    async onOk() {
+      stblView.form = await api.shareTable.view(shareTable.selected.key).save(stblView.form)
+      await refresh(shareTable.selected.key)
+      stblView.nameMode = 'select'
+    }
+  })
+}
+function onSvwNameChange(selName: string) {
+  stblView.form.name = selName
+  if (stblView.nameMode === 'select' || shareTable.preview.visible) {
+    const selView = (shareTable.selected.fkViews as StView[]).find(vw => vw.name === selName)
+    if (selView) {
+      StView.copy(selView, stblView.form, true)
+    } else {
+      stblView.form.reset()
+    }
+  }
 }
 </script>
 
@@ -477,7 +504,16 @@ function onShareTableClick() {
         title="返回一页表"
         @back="() => (shareTable.preview.visible = false)"
       >
-        <template #subTitle>
+        <template v-if="shareTable.type === 'view'" #subTitle>
+          当前视图：
+          <a-select
+            class="min-w-32"
+            :options="storeVwOpns"
+            v-model:value="stblView.form.name"
+            @select="onSvwNameChange"
+          />
+        </template>
+        <template v-else #subTitle>
           当前用户：
           <a-select
             :options="userOpns"
@@ -545,18 +581,12 @@ function onShareTableClick() {
           :size="stblView.form.size"
           :im-export="false"
           :emitter="emitter"
-          :api="{
-            all: () =>
-              api.shareTable
-                .data(shareTable.selected.key)
-                .all({ axiosConfig: { params: stblView.form } })
-          }"
-          :mapper="mapper"
+          :api="api.shareTable.data(shareTable.selected.key)"
           :columns="viewCols"
           :addable="false"
           :editable="false"
           :delable="false"
-          :new-fun="() => newObjByMapper(mapper)"
+          @refresh="(records: any[], callback: Function) => genViewRefresh(shareTable.selected, stblView.form)(records, callback)"
         >
           <template v-if="!shareTable.preview.visible" #title>
             <a-radio-group v-model:value="shareTable.type" @change="() => emitter.emit('refresh')">
@@ -565,18 +595,25 @@ function onShareTableClick() {
               <a-radio-button value="opLog">操作日志</a-radio-button>
             </a-radio-group>
           </template>
-          <template #extra>
-            <SelOrIpt v-model:value="stblView.form.key" />
+          <template v-if="!shareTable.preview.visible" #extra>
+            <SelOrIpt
+              class="min-w-32"
+              :options="storeVwOpns"
+              :value="stblView.form.name"
+              v-model:mode="stblView.nameMode"
+              @update:value="onSvwNameChange"
+            />
             <a-select
+              :disabled="stblView.nameMode === 'select'"
               :options="[
                 { label: '表视图', value: 'table' },
                 { label: '图视图', value: 'chart' }
               ]"
               v-model:value="stblView.form.vtype"
             />
-            <a-button type="primary">保存当前视图</a-button>
+            <a-button type="primary" @click="onStVwSaveClick">保存当前视图</a-button>
           </template>
-          <template #hdContent>
+          <template v-if="!shareTable.preview.visible" #hdContent>
             <a-descriptions size="small" :column="4">
               <a-descriptions-item label="尺寸">
                 <a-radio-group v-model:value="stblView.form.size" size="small">
@@ -586,10 +623,17 @@ function onShareTableClick() {
                 </a-radio-group>
               </a-descriptions-item>
               <a-descriptions-item label="折列">
-                <a-input-number v-model:value="stblView.form.wrapCols" size="small" :min="0" />
+                <a-input-number v-model:value="stblView.form.wrap" size="small" :min="0" />
               </a-descriptions-item>
-              <a-descriptions-item label="Creation Time">2017-01-10</a-descriptions-item>
-              <a-descriptions-item label="Effective Time">2017-10-10</a-descriptions-item>
+              <a-descriptions-item label="分组">
+                <a-select
+                  class="min-w-[33%]"
+                  :options="columns.map(col => ({ label: col.title, value: col.dataIndex }))"
+                  v-model:value="stblView.form.group"
+                  size="small"
+                  @change="() => emitter.emit('refresh')"
+                />
+              </a-descriptions-item>
             </a-descriptions>
           </template>
         </EditableTable>

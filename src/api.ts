@@ -29,6 +29,7 @@ import StRcd from './types/stRecord'
 import { useLoginStore } from './stores/login'
 import Auth from '@/types/stAuth'
 import StOpLog from './types/stOpLog'
+import StView from './types/stView'
 
 const gpusHost = '38.155.60.235'
 const appsHost = '38.152.2.152'
@@ -265,6 +266,17 @@ const expIns = {
         }),
       remove: (stable: STable) => reqDelete('stable', stable.key, { ...stblOpns, type: 'api' })
     },
+    view: (tid = router.currentRoute.value.query.tid as string) => ({
+      save: async (sview: StView) => {
+        const edtSvw = sview.key
+          ? await reqPut<StView>('view', sview.key, sview, { ...stblOpns, copy: StView.copy })
+          : await reqPost<StView>('view', sview, { ...stblOpns, copy: StView.copy })
+        if (!sview.key) {
+          await reqLink({ parent: ['stable', tid], child: ['fkViews', edtSvw.key] }, true, stblOpns)
+        }
+        return edtSvw
+      }
+    }),
     user: (tid = router.currentRoute.value.query.tid as string) => ({
       all: () =>
         reqGet<STable>('stable', tid, {
@@ -326,16 +338,7 @@ const expIns = {
             }
           }
         })
-        if (options?.axiosConfig?.params.wrapCols) {
-          const wrapCols = options.axiosConfig.params.wrapCols
-          console.log(records.length / (wrapCols + 1))
-          for (let colIdx = 0; colIdx < wrapCols; ++colIdx) {
-            // TODO: 分表
-          }
-          return []
-        } else {
-          return records.map(rcd => ({ key: rcd.key, fkUser: rcd.fkUser, ...rcd.raw }))
-        }
+        return records.map(rcd => ({ key: rcd.key, fkUser: rcd.fkUser, ...rcd.raw }))
       },
       add: (raw: any) =>
         reqPost<StRcd>(`stable/${tid}/record`, raw, {
