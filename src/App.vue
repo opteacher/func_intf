@@ -6,7 +6,8 @@ import {
   TableOutlined,
   PictureOutlined,
   FormOutlined,
-  FilePdfOutlined
+  FilePdfOutlined,
+  AuditOutlined
 } from '@ant-design/icons-vue'
 import router from './router'
 import { type SelectInfo } from 'ant-design-vue/lib/menu/src/interface'
@@ -94,6 +95,12 @@ function onMuItmSelect(params: SelectInfo) {
               <a-menu-item key="data">数据表</a-menu-item>
               <a-menu-item key="user">用户表</a-menu-item>
               <a-menu-item key="table1">一页表</a-menu-item>
+            </a-sub-menu>
+            <a-sub-menu key="fast_check">
+              <template #icon><AuditOutlined /></template>
+              <template #title>快核勤务核查</template>
+              <a-menu-item key="query">查询</a-menu-item>
+              <a-menu-item key="admin">管理</a-menu-item>
             </a-sub-menu>
           </a-menu>
         </a-layout-sider>

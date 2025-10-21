@@ -7,6 +7,14 @@ import MyLib from '@lib/index'
 import '@lib/assets/main.css'
 import './style.css'
 import { createPinia } from 'pinia'
+import 'dayjs/locale/zh-cn'
+import dayjs from 'dayjs'
+import utc from 'dayjs/plugin/utc'
+import timezone from 'dayjs/plugin/timezone'
+dayjs.extend(utc)
+dayjs.extend(timezone)
+dayjs.tz.setDefault('Asia/Shanghai')
+dayjs.locale('zh-cn')
 
 const pinia = createPinia()
 

@@ -30,6 +30,10 @@ import { useLoginStore } from './stores/login'
 import Auth from '@/types/stAuth'
 import StOpLog from './types/stOpLog'
 import StView from './types/stView'
+import FstRcd from './types/fstRcd'
+import FstRes from './types/fstRes'
+import type FstQry from './types/fstQry'
+import dayjs, { Dayjs } from 'dayjs'
 
 const gpusHost = '38.155.60.235'
 const appsHost = '38.152.2.152'
@@ -42,6 +46,7 @@ export const mqttHost = import.meta.env.PROD ? appsHost : testHost
 export const ado2WdsURL = import.meta.env.PROD ? `http://${gpusHost}:5111` : ''
 export const mgcPdfURL = import.meta.env.PROD ? `http://${gpusHost}:3290` : ''
 export const stableURL = import.meta.env.PROD ? `http://${appsHost}:4727` : ''
+export const fastChkURL = import.meta.env.PROD ? `http://${appsHost}:6433` : ''
 
 const toolOpns = {
   project: 'tools_box',
@@ -70,6 +75,10 @@ const mgcPdfOpns = {
 const stblOpns = {
   project: 'share-table',
   axiosConfig: { baseURL: stableURL }
+}
+const fstChkOpns = {
+  project: 'fast-check',
+  axiosConfig: { baseURL: fastChkURL }
 }
 
 const bindLgnTkn = (): RequestOptions => {
@@ -439,6 +448,78 @@ const expIns = {
         return reqDelete('opLog', log.key, stblOpns)
       }
     })
+  },
+  fastCheck: {
+    record: {
+      all: (options?: RequestOptions) =>
+        reqAll<FstRcd>('record', {
+          project: 'fast-check',
+          copy: FstRcd.copy,
+          axiosConfig: {
+            baseURL: fastChkURL,
+            params: options?.axiosConfig?.params
+          }
+        }),
+      add: (record: any) => {
+        record = setProp(record, 'kssj', dayjs(record.kssj))
+        record = setProp(record, 'jssj', dayjs(record.jssj))
+        return reqPost('record', record, { ...fstChkOpns, copy: FstRcd.copy })
+      },
+      count: () => reqGet<number>('record', 'count', { type: 'api', ...fstChkOpns }),
+      query: (fstQry: FstQry) =>
+        reqPost<FstRes[]>('record', fstQry, {
+          type: 'api',
+          project: 'fast-check',
+          action: 's/query',
+          copy: FstRes.copy,
+          axiosConfig: {
+            baseURL: fastChkURL
+          }
+        }),
+      impByTkn: async (params: { token: string; dtPair: [Dayjs, Dayjs] }) => {
+        let resp = await axios.get('/zxhc/cjgl/cxjl/list', {
+          baseURL: 'http://38.4.72.245:10001',
+          params: {
+            pageNum: 1,
+            pageSize: 1,
+            cxrbm: 2466,
+            params: {
+              beginTime: params.dtPair[0].format('YYYY-MM-DD'),
+              endTime: params.dtPair[1].format('YYYY-MM-DD')
+            }
+          },
+          headers: {
+            'Authorization-zxhc': 'Bearer ' + params.token
+          }
+        })
+        if (resp.status !== 200) {
+          throw new Error(
+            `请求失败[${resp.status}](${resp.statusText})：${JSON.stringify(resp.data)}`
+          )
+        }
+        resp = await axios.get('/zxhc/cjgl/cxjl/list', {
+          baseURL: 'http://38.4.72.245:10001',
+          params: {
+            pageNum: 1,
+            pageSize: resp.data.total,
+            cxrbm: 2466,
+            params: {
+              beginTime: params.dtPair[0].format('YYYY-MM-DD'),
+              endTime: params.dtPair[1].format('YYYY-MM-DD')
+            }
+          },
+          headers: {
+            'Authorization-zxhc': 'Bearer ' + params.token
+          }
+        })
+        if (resp.status !== 200) {
+          throw new Error(
+            `请求失败[${resp.status}](${resp.statusText})：${JSON.stringify(resp.data)}`
+          )
+        }
+        return resp.data
+      }
+    }
   }
 }
 export default expIns

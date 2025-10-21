@@ -18,6 +18,8 @@ import StblUser from '../views/StblUser.vue'
 import StblData from '../views/StblData.vue'
 import ShareTable1 from '../views/ShareTable1.vue'
 import StblView from '../views/StblView.vue'
+import FstChkQuery from '../views/FstChkQuery.vue'
+import FstChkAdmin from '../views/FstChkAdmin.vue'
 
 const routes: Array<RouteRecordRaw> = [
   {
@@ -127,6 +129,16 @@ const routes: Array<RouteRecordRaw> = [
     path: '/func_intf/share_table/view',
     name: 'share_tableView',
     component: StblView
+  },
+  {
+    path: '/func_intf/fast_check/query',
+    name: 'fast_checkQuery',
+    component: FstChkQuery
+  },
+  {
+    path: '/func_intf/fast_check/admin',
+    name: 'fast_checkAdmin',
+    component: FstChkAdmin
   }
 ]
 
