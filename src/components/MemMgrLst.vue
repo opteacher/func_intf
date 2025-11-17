@@ -85,7 +85,7 @@ const authTable = reactive({
       title: '增',
       dataIndex: 'add',
       key: 'add',
-      width: 250,
+      width: 450,
       align: 'center'
     },
     {
@@ -104,6 +104,12 @@ const authTable = reactive({
       title: '查',
       key: 'query',
       dataIndex: 'query',
+      align: 'center'
+    },
+    {
+      title: '导入导出',
+      key: 'imExport',
+      dataIndex: 'imExport',
       align: 'center'
     }
   ],
@@ -492,9 +498,35 @@ async function onBatImpUsrSubmit(info: BatImp) {
       :data-source="authTable.opers"
       :pagination="false"
     >
+      <template #headerCell="{ title, column }">
+        <template v-if="column.key === 'imExport'">
+          {{ title }}&nbsp;
+          <a-tooltip>
+            <template #title>
+              <pre>{{ '* 导入数量受新增数量控制\n* 导出数据是权限可查询得到的数据' }}</pre>
+            </template>
+            <InfoCircleOutlined />
+          </a-tooltip>
+        </template>
+      </template>
       <template #bodyCell="{ record, column }">
         <a-space v-if="record.desc === '可否操作' && column.dataIndex !== 'desc'">
+          <template v-if="column.dataIndex === 'imExport'">
+            <a-switch
+              v-model:checked="userList.formState.auth.importable"
+              :disabled="!userList.formState.auth.addable"
+              checked-children="可导入"
+              un-checked-children="不可导入"
+            />
+            <a-switch
+              v-model:checked="userList.formState.auth.exportable"
+              :disabled="!userList.formState.auth.queriable"
+              checked-children="可导出"
+              un-checked-children="不可导出"
+            />
+          </template>
           <a-switch
+            v-else
             v-model:checked="userList.formState.auth[getProp(operDict, column.dataIndex + '[0]') as OperType]"
             checked-children="可"
             un-checked-children="否"
@@ -518,23 +550,20 @@ async function onBatImpUsrSubmit(info: BatImp) {
               <InfoCircleOutlined />
             </a-tooltip>
           </a-form-item>
-          <a-form-item v-if="column.dataIndex === 'add'" label="可新增的记录数" name="canAddNum">
-            <a-input
-              :disabled="!userList.formState.auth.addable"
-              :type="userList.formState.auth.canAddNum === '*' ? 'text' : 'number'"
-              placeholder="记录数"
-              v-model:value="userList.formState.auth.canAddNum"
-            >
-              <template #suffix>
-                <a-button
-                  size="small"
-                  type="text"
-                  @click="() => (userList.formState.auth.canAddNum = '*')"
-                >
-                  无限制
-                </a-button>
-              </template>
-            </a-input>
+          <a-form-item v-if="column.dataIndex === 'add'" name="canAddNum">
+            <div class="flex items-center space-x-2">
+              <a-input
+                class="flex-1"
+                :disabled="!userList.formState.auth.addable"
+                :type="userList.formState.auth.canAddNum === '*' ? 'text' : 'number'"
+                placeholder="记录数"
+                v-model:value="userList.formState.auth.canAddNum"
+              >
+                <template #prefix>可新增</template>
+                <template #suffix>条记录</template>
+              </a-input>
+              <a-button @click="() => (userList.formState.auth.canAddNum = '*')">无限制</a-button>
+            </div>
           </a-form-item>
           <OpSubFmItm
             v-else-if="['delete', 'update', 'query'].includes(column.dataIndex)"

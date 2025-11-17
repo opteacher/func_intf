@@ -246,6 +246,12 @@ function filterDataByAuth(record: any) {
     :addable="addable"
     :editable="editable"
     :delable="delable"
+    :im-export="{
+      expable: lgnUsr?.auth.exportable,
+      impable: lgnUsr?.auth.importable,
+      expName: stable.name
+    }"
+    :scrollable="true"
     :new-fun="() => newObjByMapper(mapper)"
     @refresh="refresh"
   >

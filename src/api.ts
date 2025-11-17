@@ -398,7 +398,7 @@ const expIns = {
       },
       count: (uid?: string) =>
         tid
-          ? reqGet(`stable/${tid}/record`, undefined, {
+          ? reqGet('stable', `${tid}/record`, {
               project: 'share-table',
               action: 'count',
               type: 'api',

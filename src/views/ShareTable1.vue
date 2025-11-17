@@ -352,9 +352,7 @@ async function onEdtColSubmit(form: any, callback: Function) {
   if (form.key in shareTable.selected.form) {
     await api.shareTable.stable.update({
       key: shareTable.selected.key,
-      form: replaceObjProps(shareTable.selected.form, {
-        [form.key]: pickOrIgnore(form, ['$', 'delCol'])
-      })
+      form: setProp(shareTable.selected.form, form.key, pickOrIgnore(form, ['$', 'delCol']))
     })
   } else {
     await api.shareTable.stable.update({
@@ -389,6 +387,8 @@ async function onPrevUsrSelect(key: string) {
   if (key === 'admin') {
     prev.auth.reset()
     prev.auth.canAddNum = '*'
+    prev.auth.importable = true
+    prev.auth.exportable = true
     prev.tblProps.addable = true
     prev.tblProps.editable = true
     prev.tblProps.delable = true
@@ -583,6 +583,7 @@ async function onColPosChange(key: string, oper: 'front' | 'back') {
           :addable="false"
           :editable="false"
           :delable="false"
+          :scrollable="true"
         >
           <template #title>
             <a-radio-group v-model:value="shareTable.type" @change="() => emitter.emit('refresh')">
@@ -623,6 +624,7 @@ async function onColPosChange(key: string, oper: 'front' | 'back') {
           :addable="false"
           :editable="false"
           :delable="false"
+          :scrollable="true"
           @refresh="(records: any[], callback: Function) => genViewRefresh(shareTable.selected, stblView.form)(records, callback)"
         >
           <template v-if="!shareTable.preview.visible" #title>
@@ -698,16 +700,12 @@ async function onColPosChange(key: string, oper: 'front' | 'back') {
           :rounded="false"
           :size="shareTable.selected.size"
           :pagable="true"
-          :im-export="
-            shareTable.preview.visible
-              ? false
-              : {
-                  expable: true,
-                  impable: true,
-                  uploadUrl: '/share-table/api/v1/file/upload',
-                  expName: shareTable.selected.name
-                }
-          "
+          :scrollable="true"
+          :im-export="{
+            expable: shareTable.preview.auth.exportable,
+            impable: shareTable.preview.auth.importable,
+            expName: shareTable.selected.name
+          }"
           :edit-mode="shareTable.selected.edtMod"
           :emitter="emitter"
           :api="api.shareTable.data(shareTable.selected.key)"
@@ -732,7 +730,8 @@ async function onColPosChange(key: string, oper: 'front' | 'back') {
               class="w-full flex items-center whitespace-nowrap"
             >
               <a class="flex-1" @click="() => onEdtColClick(column)">
-                <EditOutlined />&nbsp;{{ column.title }}
+                <EditOutlined />
+                &nbsp;{{ column.title }}
               </a>
               <div class="justify-end">
                 <a

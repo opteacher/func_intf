@@ -65,6 +65,8 @@ export default class Auth implements AuthInterface {
   canDelRows: AuCond[]
   canUpdRows: AuCond[]
   canQryRows: AuCond[]
+  importable: boolean
+  exportable: boolean
   static _cmpDict = {
     '==': (record: any, cond: AuCond) => getProp(record, cond.prop) === cond.value,
     '!=': (record: any, cond: AuCond) => getProp(record, cond.prop) !== cond.value
@@ -90,6 +92,8 @@ export default class Auth implements AuthInterface {
     this.canDelRows = []
     this.canUpdRows = []
     this.canQryRows = [new AuCond()]
+    this.importable = false
+    this.exportable = false
   }
 
   reset() {
@@ -104,6 +108,8 @@ export default class Auth implements AuthInterface {
     this.canDelRows = []
     this.canUpdRows = []
     this.canQryRows = [new AuCond()]
+    this.importable = false
+    this.exportable = false
   }
 
   canOperRow(oper: 'canDelRows' | 'canUpdRows' | 'canQryRows', record: any): boolean {
