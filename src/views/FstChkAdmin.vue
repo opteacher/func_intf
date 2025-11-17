@@ -3,13 +3,13 @@
     <template #extra>
       <a-button @click="() => emitter.emit('update:visible', true)">批量导入</a-button>
     </template>
-    <template #hcrq="{ record }: { record: FstRcd }">
+    <template #hcrq="{ record }: any">
       {{ record.hcrq.format('YYYY-MM-DD') }}
     </template>
-    <template #kssj="{ record }: { record: FstRcd }">
+    <template #kssj="{ record }: any">
       {{ record.kssj.format('HH:mm:ss') }}
     </template>
-    <template #jssj="{ record }: { record: FstRcd }">
+    <template #jssj="{ record }: any">
       {{ record.jssj.format('HH:mm:ss') }}
     </template>
   </EditableTable>
@@ -36,7 +36,6 @@ import { TinyEmitter } from 'tiny-emitter'
 import api from '@/api'
 import FstImp from '@/types/fstImp'
 import { newOne } from '@lib/utils'
-import FstRcd from '@/types/fstRcd'
 import Column from '@lib/types/column'
 
 const emitter = new TinyEmitter()
@@ -74,12 +73,15 @@ const mapper = reactive(
             { label: '复制黏贴', value: 'editor' },
             { label: '上传Json文件', value: 'file' }
           ],
-          display: [Cond.create('impType', '=', 'json')]
+          display: [Cond.create('impType', '==', 'json')]
         },
         jsonFile: {
           type: 'UploadFile',
           label: '上传Json',
-          display: [Cond.create('impType', '=', 'json'), Cond.create('data.jsonType', '=', 'file')],
+          display: [
+            Cond.create('impType', '==', 'json'),
+            Cond.create('data.jsonType', '==', 'file')
+          ],
           onBeforeUpload: (file: File) => {
             const reader = new FileReader()
             reader.readAsText(file, 'utf-8')
@@ -103,24 +105,24 @@ const mapper = reactive(
           type: 'JsonEditor',
           label: '请求返回Json',
           display: [
-            Cond.create('impType', '=', 'json'),
-            Cond.create('data.jsonType', '=', 'editor')
+            Cond.create('impType', '==', 'json'),
+            Cond.create('data.jsonType', '==', 'editor')
           ]
         },
         token: {
           type: 'Textarea',
           label: '请求授权Token',
-          display: [Cond.create('impType', '=', 'token')]
+          display: [Cond.create('impType', '==', 'token')]
         },
         dtPair: {
           type: 'Unknown',
           label: '时间段',
-          display: [Cond.create('impType', '=', 'token')]
+          display: [Cond.create('impType', '==', 'token')]
         },
         file: {
           type: 'UploadFile',
           label: 'Excel文件',
-          display: [Cond.create('impType', '=', 'file')]
+          display: [Cond.create('impType', '==', 'file')]
         }
       })
     }

@@ -3,7 +3,7 @@
     v-if="detail.records.length"
     title="详细查询记录"
     :description="`${detail.queryer.name} / ${detail.queryer.institution}`"
-    :api="{ all: () => detail.records }"
+    :api="{ all: async () => detail.records }"
     :im-export="{ expable: true }"
     :columns="rcdCols"
     :new-fun="() => newOne(FstRcd)"
@@ -16,16 +16,16 @@
         <template #icon><ArrowLeftOutlined /></template>
       </a-button>
     </template>
-    <template #hcrq="{ record }: { record: FstRcd }">
+    <template #hcrq="{ record }: any">
       {{ record.hcrq.format('YYYY-MM-DD') }}
     </template>
-    <template #kssj="{ record }: { record: FstRcd }">
+    <template #kssj="{ record }: any">
       {{ record.kssj.format('HH:mm:ss') }}
     </template>
-    <template #jssj="{ record }: { record: FstRcd }">
+    <template #jssj="{ record }: any">
       {{ record.jssj.format('HH:mm:ss') }}
     </template>
-    <template #hczjhm="{ record }: { record: FstRcd }">
+    <template #hczjhm="{ record }: any">
       {{
         record.hczjhm.length === 18
           ? `${record.hczjhm.slice(0, 4)}***${record.hczjhm.slice(-4)}`
@@ -49,25 +49,25 @@
         <template #icon><ArrowLeftOutlined /></template>
       </a-button>
     </template>
-    <template #date="{ record }: { record: FstRes }">
+    <template #date="{ record }: any">
       {{ record.date.format('YYYY-MM-DD') }}
     </template>
-    <template #begTime="{ record }: { record: FstRes }">
+    <template #begTime="{ record }: any">
       {{ record.begTime.format('HH:mm:ss') }}
     </template>
-    <template #endTime="{ record }: { record: FstRes }">
+    <template #endTime="{ record }: any">
       {{ record.endTime.format('HH:mm:ss') }}
     </template>
-    <template #qNum="{ record }: { record: FstRes }">
+    <template #qNum="{ record }: any">
       {{ record.qNum || 0 }}
     </template>
-    <template #pNum="{ record }: { record: FstRes }">
+    <template #pNum="{ record }: any">
       {{ record.pNum || 0 }}
     </template>
-    <template #cNum="{ record }: { record: FstRes }">
+    <template #cNum="{ record }: any">
       {{ record.cNum || 0 }}
     </template>
-    <template #exceptions="{ record }: { record: FstRes }">
+    <template #exceptions="{ record }: any">
       <a-space direction="vertical">
         <a-badge v-if="record.exStat.samePos.length" :count="record.exStat.samePos.length">
           <a-button size="small" @click="onStatTagClick('samePos', record)">
@@ -82,20 +82,6 @@
     </template>
   </EditableTable>
   <div v-else class="relative w-full h-full overflow-auto">
-    <!-- <a-row>
-      <a-col :span="6">
-        <a-statistic title="查询次数不达标" :value="999" />
-      </a-col>
-      <a-col :span="6">
-        <a-statistic title="查询频率过快" :value="999" />
-      </a-col>
-      <a-col :span="6">
-        <a-statistic title="同位置多次查询" :value="999" />
-      </a-col>
-      <a-col :span="6">
-        <a-statistic title="同对象多次查询" :value="999" />
-      </a-col>
-    </a-row> -->
     <div class="w-[50vw] absolute left-1/2 top-0 -translate-x-1/2">
       <a-row class="mb-10">
         <a-col :span="4" class="text-right"><MonitorOutlined class="text-5xl me-3" /></a-col>
@@ -104,6 +90,12 @@
         </a-col>
       </a-row>
       <FormGroup :mapper="mapper" :form="form" @update:fprop="onFpropUpdate">
+        <template #namesSFX>
+          <a-button @click="() => swchBoolProp(pasteNames, 'is')">复制粘贴</a-button>
+        </template>
+        <template #namesTextSFX>
+          <a-button @click="() => swchBoolProp(pasteNames, 'is')">单个输入</a-button>
+        </template>
         <template #exceptConds.minQrys>
           <a-form-item-rest>
             <a-input-group>
@@ -142,7 +134,7 @@ import FstQry from '@/types/fstQry'
 import FormGroup from '@lib/components/FormGroup.vue'
 import Column from '@lib/types/column'
 import Mapper from '@lib/types/mapper'
-import { setProp, newOne } from '@lib/utils'
+import { setProp, newOne, swchBoolProp } from '@lib/utils'
 import { reactive, ref } from 'vue'
 import api from '@/api'
 import FstRes from '@/types/fstRes'
@@ -183,7 +175,18 @@ const mapper = reactive(
       }),
       inline: true,
       flatItem: true,
-      newFun: () => ({ name: '' })
+      newFun: () => ({ name: '' }),
+      display: () => !pasteNames.is
+    },
+    namesText: {
+      type: 'Textarea',
+      label: '查询人员姓名',
+      placeholder: '回车或逗号（半月）作为姓名的间隔',
+      disabled: () => loading.value,
+      display: () => pasteNames.is,
+      onBlur: (query: FstQry, text: string) => {
+        query.names = text.indexOf(',') != -1 ? text.split(',') : text.split('\n')
+      }
     },
     institution: {
       type: 'Select',
@@ -246,6 +249,10 @@ const rcdCols = reactive([
   new Column('经度', 'lon'),
   new Column('纬度', 'lat')
 ])
+const pasteNames = reactive({
+  is: false,
+  value: ''
+})
 
 function onFpropUpdate(values: any) {
   Object.entries(values).map(([k, v]) => setProp(form, k, v))

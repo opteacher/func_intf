@@ -32,12 +32,14 @@ export default class FstQry {
   tmRange: [Dayjs, Dayjs]
   institution: string
   exceptConds: ExceptConds
+  namesText: string
 
   constructor() {
     this.names = []
     this.tmRange = [dayjs(), dayjs()]
     this.institution = ''
     this.exceptConds = new ExceptConds()
+    this.namesText = ''
   }
 
   reset() {
@@ -46,6 +48,7 @@ export default class FstQry {
     this.tmRange[1] = dayjs()
     this.institution = ''
     this.exceptConds.reset()
+    this.namesText = ''
   }
 
   static copy(src: any, tgt?: FstQry, force = false): FstQry {

@@ -476,49 +476,25 @@ const expIns = {
             baseURL: fastChkURL
           }
         }),
-      impByTkn: async (params: { token: string; dtPair: [Dayjs, Dayjs] }) => {
-        let resp = await axios.get('/zxhc/cjgl/cxjl/list', {
-          baseURL: 'http://38.4.72.245:10001',
-          params: {
-            pageNum: 1,
-            pageSize: 1,
-            cxrbm: 2466,
-            params: {
-              beginTime: params.dtPair[0].format('YYYY-MM-DD'),
-              endTime: params.dtPair[1].format('YYYY-MM-DD')
-            }
+      //
+      impByTkn: async (params: { token: string; dtPair: [Dayjs, Dayjs] }) =>
+        reqPost(
+          'record',
+          {
+            token: params.token,
+            tmRange: params.dtPair.map(dt => dt.format('YYYY-MM-DD')),
+            deptCode: 2466
           },
-          headers: {
-            'Authorization-zxhc': 'Bearer ' + params.token
-          }
-        })
-        if (resp.status !== 200) {
-          throw new Error(
-            `请求失败[${resp.status}](${resp.statusText})：${JSON.stringify(resp.data)}`
-          )
-        }
-        resp = await axios.get('/zxhc/cjgl/cxjl/list', {
-          baseURL: 'http://38.4.72.245:10001',
-          params: {
-            pageNum: 1,
-            pageSize: resp.data.total,
-            cxrbm: 2466,
-            params: {
-              beginTime: params.dtPair[0].format('YYYY-MM-DD'),
-              endTime: params.dtPair[1].format('YYYY-MM-DD')
+          {
+            type: 'api',
+            project: 'fast-check',
+            action: 'batch/import',
+            copy: FstRcd.copy,
+            axiosConfig: {
+              baseURL: fastChkURL
             }
-          },
-          headers: {
-            'Authorization-zxhc': 'Bearer ' + params.token
           }
-        })
-        if (resp.status !== 200) {
-          throw new Error(
-            `请求失败[${resp.status}](${resp.statusText})：${JSON.stringify(resp.data)}`
-          )
-        }
-        return resp.data
-      }
+        )
     }
   }
 }

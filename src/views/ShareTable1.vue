@@ -22,7 +22,9 @@ import {
   SettingOutlined,
   EyeOutlined,
   ShareAltOutlined,
-  MoreOutlined
+  MoreOutlined,
+  CaretLeftOutlined,
+  CaretRightOutlined
 } from '@ant-design/icons-vue'
 import { Modal } from 'ant-design-vue'
 import MemMgrList from '@/components/MemMgrLst.vue'
@@ -248,6 +250,7 @@ const viewCols = computed<Column[]>(() => {
 const storeVwOpns = computed(() =>
   (shareTable.selected.fkViews as StView[]).map(vw => ({ value: vw.name, label: vw.name }))
 )
+const colKeys = computed(() => Object.keys(shareTable.selected.form))
 
 onMounted(refresh)
 watch(
@@ -458,6 +461,23 @@ function onSvwNameChange(selName: string) {
 function onGrpCfgSubmit(form: any, done: Function) {
   console.log(form)
   done()
+}
+async function onColPosChange(key: string, oper: 'front' | 'back') {
+  const index = Object.keys(shareTable.selected.form).indexOf(key)
+  let columns = Object.values(shareTable.selected.form)
+  switch (oper) {
+    case 'front':
+      ;[columns[index], columns[index - 1]] = [columns[index - 1], columns[index]]
+      break
+    case 'back':
+      ;[columns[index], columns[index + 1]] = [columns[index + 1], columns[index]]
+      break
+  }
+  await api.shareTable.stable.update({
+    key: shareTable.selected.key,
+    form: Object.fromEntries(columns.map(col => [col.key, col]))
+  })
+  await refresh(shareTable.selected.key)
 }
 </script>
 
@@ -707,15 +727,28 @@ function onGrpCfgSubmit(form: any, done: Function) {
             </a-radio-group>
           </template>
           <template v-for="col in columns" #[`${col.key}HD`]="{ column }: any">
-            <a-button
+            <div
               v-if="!shareTable.preview.visible"
-              class="p-0 border-0"
-              type="link"
-              @click="() => onEdtColClick(column)"
+              class="w-full flex items-center whitespace-nowrap"
             >
-              <template #icon><EditOutlined /></template>
-              {{ column.title }}
-            </a-button>
+              <a class="flex-1" @click="() => onEdtColClick(column)">
+                <EditOutlined />&nbsp;{{ column.title }}
+              </a>
+              <div class="justify-end">
+                <a
+                  v-if="colKeys.indexOf(col.key) > 0"
+                  @click="() => onColPosChange(col.key, 'front')"
+                >
+                  <CaretLeftOutlined />
+                </a>
+                <a
+                  v-if="colKeys.indexOf(col.key) < colKeys.length - 1"
+                  @click="() => onColPosChange(col.key, 'back')"
+                >
+                  <CaretRightOutlined />
+                </a>
+              </div>
+            </div>
             <template v-else>{{ column.title }}</template>
           </template>
           <template #right="{ height }: { height: number }">

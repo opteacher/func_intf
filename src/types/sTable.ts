@@ -203,22 +203,22 @@ export const extraDict = {
     hourStep: {
       type: 'Number',
       label: '小时步进',
-      display: [Cond.create('showTime', '=', true)]
+      display: [Cond.create('showTime', '==', true)]
     },
     minuteStep: {
       type: 'Number',
       label: '分钟步进',
-      display: [Cond.create('showTime', '=', true)]
+      display: [Cond.create('showTime', '==', true)]
     },
     secondStep: {
       type: 'Number',
       label: '秒步进',
-      display: [Cond.create('showTime', '=', true)]
+      display: [Cond.create('showTime', '==', true)]
     },
     dsbHours: {
       type: 'EditList',
       label: '显示小时数',
-      display: [Cond.create('showTime', '=', true)],
+      display: [Cond.create('showTime', '==', true)],
       mapper: new Mapper({ hour: { type: 'Number' } }),
       inline: true,
       flatItem: true,
