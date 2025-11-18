@@ -135,7 +135,17 @@ const columns = computed<Column[]>(() =>
     setProp(new Column(value.label, key), 'mapper', value)
   )
 )
-const mapper = computed(() => new Mapper(shareTable.selected.form))
+const mapper = computed(
+  () =>
+    new Mapper(
+      Object.fromEntries(
+        Object.entries(shareTable.selected.form).map(([key, val]) => [
+          key,
+          val.required ? setProp(val, 'rules', [{ required: true, message: '' }]) : val
+        ])
+      )
+    )
+)
 const addColumn = reactive({
   mapper: new Mapper({
     demo: {
