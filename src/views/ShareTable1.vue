@@ -14,7 +14,7 @@ import Mapper, {
 import Column from '@lib/types/column'
 import FormDialog from '@lib/components/FormDialog.vue'
 import { compoOpns, Cond, type CompoType } from '@lib/types'
-import { getProp, newOne, pickOrIgnore, replaceObjProps, setProp, swchBoolProp } from '@lib/utils'
+import { getProp, newOne, pickOrIgnore, setProp, swchBoolProp } from '@lib/utils'
 import {
   EditOutlined,
   ExclamationCircleOutlined,
@@ -35,6 +35,7 @@ import router from '@/router'
 import { operDict } from '@/types/stOpLog'
 import StView, { genViewColumns, genViewRefresh } from '@/types/stView'
 import SelOrIpt from '@lib/components/SelOrIpt.vue'
+import StColumn from '@/types/stColumn'
 
 const layout = reactive({
   rgtEmitter: new TinyEmitter(),
@@ -182,7 +183,7 @@ const addColumn = reactive({
       placeholder: '输入表单框中提示',
       onChange: onAddColChange
     },
-    'rules[0].required': {
+    required: {
       type: 'Switch',
       label: '必填/必选',
       onChange: onAddColChange
@@ -251,12 +252,14 @@ const storeVwOpns = computed(() =>
   (shareTable.selected.fkViews as StView[]).map(vw => ({ value: vw.name, label: vw.name }))
 )
 const colKeys = computed(() => Object.keys(shareTable.selected.form))
+const pvwSelUsr = computed(() =>
+  shareTable.preview.selUser === 'admin' ? undefined : shareTable.preview.selUser
+)
 
 onMounted(refresh)
 watch(
   () => shareTable.preview.visible,
   () => {
-    emitter.emit('refresh')
     if (!shareTable.preview.visible) {
       onPrevUsrSelect('admin')
     } else {
@@ -277,8 +280,7 @@ async function refresh(key?: string) {
       true
     )
   }
-  onPrevUsrSelect('admin')
-  emitter.emit('refresh')
+  onPrevUsrSelect(shareTable.preview.selUser)
 }
 function onMouseUp() {
   layout.rgtEmitter.emit('mouseup')
@@ -343,11 +345,6 @@ function onAddPathClick(path: string[]) {
     shareTable.path.visible = true
   }
 }
-function newColumn() {
-  return replaceObjProps(newOne(BaseMapper), {
-    rules: [{ required: true, message: '必须输入或选择有效项！' }]
-  })
-}
 async function onEdtColSubmit(form: any, callback: Function) {
   if (form.key in shareTable.selected.form) {
     await api.shareTable.stable.update({
@@ -398,7 +395,9 @@ async function onPrevUsrSelect(key: string) {
   }
   const user = (shareTable.selected.fkUsers as StUser[]).find(usr => usr.key === key) as StUser
   Auth.copy(user.auth, prev.auth, true)
-  prev.tblProps.count = await api.shareTable.data(shareTable.selected.key).count(key)
+  prev.tblProps.count = await api.shareTable
+    .data(shareTable.selected.key, shareTable.preview.selUser)
+    .count()
   prev.tblProps.addable =
     !prev.visible ||
     (prev.auth.addable &&
@@ -708,7 +707,7 @@ async function onColPosChange(key: string, oper: 'front' | 'back') {
           }"
           :edit-mode="shareTable.selected.edtMod"
           :emitter="emitter"
-          :api="api.shareTable.data(shareTable.selected.key)"
+          :api="api.shareTable.data(shareTable.selected.key, pvwSelUsr)"
           :filter="shareTable.preview.tblProps.filter"
           :mapper="mapper"
           :columns="columns"
@@ -716,6 +715,8 @@ async function onColPosChange(key: string, oper: 'front' | 'back') {
           :editable="shareTable.preview.tblProps.editable"
           :delable="shareTable.preview.tblProps.delable"
           :new-fun="() => newObjByMapper(mapper)"
+          @after-save="() => onPrevUsrSelect(shareTable.preview.selUser)"
+          @delete="() => onPrevUsrSelect(shareTable.preview.selUser)"
         >
           <template v-if="!shareTable.preview.visible" #title>
             <a-radio-group v-model:value="shareTable.type" @change="() => emitter.emit('refresh')">
@@ -781,7 +782,7 @@ async function onColPosChange(key: string, oper: 'front' | 'back') {
         title="添加列"
         :mapper="addColumn.mapper"
         :emitter="addColumn.emitter"
-        :new-fun="newColumn"
+        :new-fun="() => newOne(StColumn)"
         :ign-props="['$']"
         @update:visible="() => addColumn.emitter.emit('update:mprop', { 'demo.items': {} })"
         @before-submit="() => addColDemoChange(false)"
@@ -794,15 +795,6 @@ async function onColPosChange(key: string, oper: 'front' | 'back') {
           >
             同列名
           </a-button>
-        </template>
-        <template #rules[0].requiredSFX="{ formState }: any">
-          <a-form-item-rest>
-            <a-input
-              :disabled="!formState.rules[0].required"
-              placeholder="输入错误提示信息"
-              v-model:value="formState.rules[0].message"
-            />
-          </a-form-item-rest>
         </template>
       </FormDialog>
       <FormDialog

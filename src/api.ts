@@ -333,7 +333,7 @@ const expIns = {
           copy: StUser.copy
         })
     }),
-    data: (tid = router.currentRoute.value.query.tid as string) => ({
+    data: (tid = router.currentRoute.value.query.tid as string, uid?: any) => ({
       all: async (options?: RequestOptions) => {
         const records = await reqAll<StRcd>('record', {
           project: 'share-table',
@@ -354,7 +354,7 @@ const expIns = {
           project: stblOpns.project,
           axiosConfig: {
             baseURL: stblOpns.axiosConfig.baseURL,
-            params: { uid: useLoginStore().user?.key }
+            params: { uid: uid || useLoginStore().user?.key }
           },
           type: 'api',
           copy: StRcd.copy
@@ -396,13 +396,13 @@ const expIns = {
         })
         return ret
       },
-      count: (uid?: string) =>
+      count: () =>
         tid
           ? reqGet('stable', `${tid}/record`, {
               project: 'share-table',
               action: 'count',
               type: 'api',
-              axiosConfig: { baseURL: stableURL, params: { uid } }
+              axiosConfig: { baseURL: stableURL, params: { uid: uid || useLoginStore().user?.key } }
             }).then(data => parseInt(data))
           : Promise.resolve(0),
       column: {

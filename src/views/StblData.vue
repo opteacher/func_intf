@@ -71,7 +71,7 @@ onMounted(async () => {
 async function refresh() {
   STable.copy(await api.shareTable.stable.get(route.query.tid as string), stable)
   login.form.extra = newObjByMapper(stable.usrExtra)
-  count.value = await api.shareTable.data().count(lgnUsr.value?.key)
+  count.value = await api.shareTable.data().count()
   ownRcds.splice(
     0,
     ownRcds.length,

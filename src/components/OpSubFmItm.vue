@@ -7,7 +7,14 @@
     @update:fprop="onFpropUpdate"
   >
     <template #addSFX>
-      <a-button @click="onOperAllClick">{{ opAry[3] }}全部</a-button>
+      <div>
+        <a-input-group compact>
+          <a-button :type="opOnlyOwn ? 'primary' : 'default'" @click="onOperOnlyOwnClick">
+            只{{ opAry[3] }}自己
+          </a-button>
+          <a-button @click="onOperAllClick">{{ opAry[3] }}全部</a-button>
+        </a-input-group>
+      </div>
     </template>
     <template #itemLabel="{ item, index }: any">
       <b v-if="!item.prop && !item.value">可{{ opAry[3] }}所有记录</b>
@@ -98,6 +105,7 @@ const opSubMapper = computed(() =>
     )
   )
 )
+const opOnlyOwn = computed<boolean>(() => getProp(props.auth, props.opAry[1]))
 
 function onFpropUpdate(auth: AuthInterface) {
   if (getProp(auth, props.opAry[2]).length === 1) {
@@ -107,6 +115,9 @@ function onFpropUpdate(auth: AuthInterface) {
   emit('update:auth', setProp(props.auth, props.opAry[2], getProp(auth, props.opAry[2])))
 }
 function onOperAllClick() {
-  setProp(props.auth, props.opAry[2], [new AuCond()])
+  emit('update:auth', setProp(props.auth, props.opAry[2], [new AuCond()]))
+}
+function onOperOnlyOwnClick() {
+  emit('update:auth', setProp(props.auth, props.opAry[1], !getProp(props.auth, props.opAry[1])))
 }
 </script>
