@@ -132,17 +132,14 @@ const shareTable = reactive({
 const emitter = new TinyEmitter()
 const columns = computed<Column[]>(() =>
   Object.entries(shareTable.selected.form).map(([key, value]) =>
-    setProp(new Column(value.label, key), 'mapper', value)
+    setProp(new Column(value.label, key), 'mapper', adjMapper(value))
   )
 )
 const mapper = computed(
   () =>
     new Mapper(
       Object.fromEntries(
-        Object.entries(shareTable.selected.form).map(([key, val]) => [
-          key,
-          val.required ? setProp(val, 'rules', [{ required: true, message: '' }]) : val
-        ])
+        Object.entries(shareTable.selected.form).map(([key, val]) => [key, adjMapper(val)])
       )
     )
 )
@@ -391,7 +388,7 @@ function onEdtStblClick(stbl: any = shareTable.selected) {
 }
 async function onPrevUsrSelect(key: string) {
   const prev = shareTable.preview
-  if (key === 'admin') {
+  if (key === 'admin' || !prev.visible) {
     prev.auth.reset()
     prev.auth.canAddNum = '*'
     prev.auth.importable = true
@@ -400,7 +397,9 @@ async function onPrevUsrSelect(key: string) {
     prev.tblProps.editable = true
     prev.tblProps.delable = true
     prev.tblProps.count = 0
-    emitter.emit('refresh')
+    if (prev.visible) {
+      emitter.emit('refresh')
+    }
     return
   }
   const user = (shareTable.selected.fkUsers as StUser[]).find(usr => usr.key === key) as StUser
@@ -487,6 +486,11 @@ async function onColPosChange(key: string, oper: 'front' | 'back') {
     form: Object.fromEntries(columns.map(col => [col.key, col]))
   })
   await refresh(shareTable.selected.key)
+}
+function adjMapper(value: StColumn) {
+  return value.required
+    ? { ...value, rules: [{ required: true, message: value.reqErrMsg }] }
+    : value
 }
 </script>
 
@@ -805,6 +809,15 @@ async function onColPosChange(key: string, oper: 'front' | 'back') {
           >
             同列名
           </a-button>
+        </template>
+        <template #requiredSFX="{ formState }: any">
+          <a-form-item-rest>
+            <a-input
+              v-model:value="formState.reqErrMsg"
+              :disabled="!formState.required"
+              placeholder="必须输入错误提示信息！"
+            />
+          </a-form-item-rest>
         </template>
       </FormDialog>
       <FormDialog
