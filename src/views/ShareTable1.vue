@@ -77,6 +77,19 @@ const shareTable = reactive({
         { label: '小', value: 'small' }
       ]
     },
+    pageSizes: {
+      type: 'TagList',
+      label: '单页数量',
+      inline: true,
+      flatItem: true,
+      mapper: new Mapper({
+        pgNum: { type: 'Number', placeholder: '单页记录数' }
+      }),
+      newFun: () => ({ pgNum: 0 }),
+      onChange: (stable: STable, to: number[]) => {
+        stable.pageSizes = to.sort((a, b) => a - b)
+      }
+    },
     usrAuth: {
       type: 'Switch',
       label: '用户授权',
@@ -713,6 +726,10 @@ function adjMapper(value: StColumn) {
           :rounded="false"
           :size="shareTable.selected.size"
           :pagable="true"
+          :pg-config="{
+            pageSizeOptions: shareTable.selected.pageSizes,
+            pageSize: shareTable.selected.pageSizes[0]
+          }"
           :scrollable="true"
           :im-export="{
             expable: shareTable.preview.auth.exportable,

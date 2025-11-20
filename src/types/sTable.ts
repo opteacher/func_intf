@@ -17,6 +17,7 @@ export default class STable {
   usrAuth: boolean // 是否需要用户权限
   usrReg: boolean // 允许用户自己注册
   size: SizeType
+  pageSizes: number[]
   usrExtra: Mapper
   tempAuth: Auth
   fkUsers: (StUser | string)[]
@@ -32,6 +33,7 @@ export default class STable {
     this.usrAuth = false // 默认不需要用户权限
     this.usrReg = false
     this.size = undefined
+    this.pageSizes = [50, 100, 200, 500]
     this.usrExtra = new Mapper()
     this.tempAuth = new Auth()
     this.fkUsers = []
@@ -48,6 +50,7 @@ export default class STable {
     this.usrAuth = false
     this.usrReg = false
     this.size = undefined
+    this.pageSizes = [50, 100, 200, 500]
     this.usrExtra = new Mapper()
     this.tempAuth = new Auth()
     this.fkUsers = []
