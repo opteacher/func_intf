@@ -101,6 +101,26 @@ const shareTable = reactive({
       placeholder: '允许用户自己注册',
       chkLabels: ['不允许', '允许'],
       disabled: [Cond.create('usrAuth', '!=', true)]
+    },
+    dropData: {
+      type: 'Button',
+      label: '清空数据',
+      inner: '删除表的所有数据',
+      danger: true,
+      icon: 'DeleteOutlined',
+      display: [Cond.create('key', '!=', '')],
+      onClick: () => {
+        Modal.confirm({
+          title: '确认清空该表的所有数据？',
+          icon: createVNode(ExclamationCircleOutlined),
+          content: '清空数据后不可恢复，请谨慎操作！',
+          onOk: async () => {
+            await api.shareTable.data(shareTable.selected.key).drop()
+            shareTable.emitter.emit('update:visible', false)
+            await refresh(shareTable.selected.key)
+          }
+        })
+      }
     }
   }),
   path: {

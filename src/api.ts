@@ -405,6 +405,7 @@ const expIns = {
               axiosConfig: { baseURL: stableURL, params: { uid: uid || useLoginStore().user?.key } }
             }).then(data => parseInt(data))
           : Promise.resolve(0),
+      drop: () => reqDelete('stable', tid, { ...stblOpns, type: 'api', action: 'record/s' }),
       column: {
         allUniq: (colKey: string) =>
           reqGet<any[]>(`stable/${tid}`, `column/${colKey}`, {
